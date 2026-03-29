@@ -21,6 +21,9 @@ export class User {
   mobile?: string;
 
   @Prop()
+  upiId?: string;
+
+  @Prop()
   currentRefreshToken?: string;
 
   @Prop()

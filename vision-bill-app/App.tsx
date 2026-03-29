@@ -22,6 +22,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { ProfileScreen } from './src/screens/ProfileScreen';
+
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient({
@@ -104,9 +106,9 @@ const MainTabs = () => (
       options={{ tabBarLabel: 'Groups', tabBarIcon: () => <Text>👥</Text> }}
     />
     <Tab.Screen 
-      name="Settings" 
-      component={View} 
-      options={{ tabBarLabel: 'Settings', tabBarIcon: () => <Text>⚙️</Text> }}
+      name="Profile" 
+      component={ProfileScreen} 
+      options={{ tabBarLabel: 'Profile', tabBarIcon: () => <Text>👤</Text> }}
     />
   </Tab.Navigator>
 );

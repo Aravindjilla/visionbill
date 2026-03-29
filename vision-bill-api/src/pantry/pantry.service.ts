@@ -75,6 +75,15 @@ export class PantryService {
 
     const totalSpent = scans.reduce((acc, s) => acc + (s.extractedTotal || 0), 0);
     
+    // Aggregate by category
+    const byCategory: { [key: string]: number } = {};
+    scans.forEach(scan => {
+      scan.items?.forEach(item => {
+        const category = item.category || 'Uncategorized';
+        byCategory[category] = (byCategory[category] || 0) + (item.price || 0);
+      });
+    });
+
     // Calculate savings by comparing against previous highs
     let savings = 0;
     items.forEach(item => {
@@ -90,7 +99,8 @@ export class PantryService {
     const stats = {
       totalSpent, 
       savings,
-      itemCount: items.length
+      itemCount: items.length,
+      byCategory,
     };
 
     await this.cacheService.set(cacheKey, stats, 3600);

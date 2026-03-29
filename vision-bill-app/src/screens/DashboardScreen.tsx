@@ -10,6 +10,7 @@ import { ErrorView } from '../components/ErrorView';
 const { width } = Dimensions.get('window');
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import api from '../utils/api';
 
 export const DashboardScreen = () => {
   const queryClient = useQueryClient();
@@ -18,8 +19,8 @@ export const DashboardScreen = () => {
     queryKey: ['dashboard'],
     queryFn: async () => {
       const [statsResp, scansResp] = await Promise.all([
-        axios.get('http://localhost:3000/pantry/stats'),
-        axios.get('http://localhost:3000/scans'),
+        api.get('/pantry/stats'),
+        api.get('/scans'),
       ]);
 
       return {
@@ -29,6 +30,7 @@ export const DashboardScreen = () => {
           { label: 'Items', value: `${statsResp.data.itemCount || 0}`, change: 'Pantry', pos: true },
         ],
         recentReceipts: scansResp.data,
+        byCategory: statsResp.data.byCategory || {},
       };
     },
   });
@@ -41,6 +43,7 @@ export const DashboardScreen = () => {
   const refreshing = isRefetching;
   const stats = data?.stats || [];
   const recentReceipts = data?.recentReceipts || [];
+  const byCategory = data?.byCategory || {};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -78,7 +81,7 @@ export const DashboardScreen = () => {
           )}
         </View>
 
-        {/* Insight Card */}
+        {/* Insight Card: Trend */}
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Text style={styles.insightTitle}>Spending Trend</Text>
@@ -104,6 +107,28 @@ export const DashboardScreen = () => {
             )}
           </View>
         </View>
+
+        {/* Insight Card: Category Breakdown */}
+        {!loading && Object.keys(byCategory).length > 0 && (
+          <View style={styles.insightCard}>
+            <Text style={[styles.insightTitle, { marginBottom: 16 }]}>Category Breakdown</Text>
+            {Object.entries(byCategory).map(([cat, val]: [string, any]) => {
+              const total = parseFloat(data?.stats?.find((s: any) => s.label === 'Total Spent')?.value.replace('₹', '') || '1');
+              const pct = (val / total) * 100;
+              return (
+                <View key={cat} style={styles.catRow}>
+                  <View style={styles.catInfo}>
+                    <Text style={styles.catLabel}>{cat}</Text>
+                    <Text style={styles.catValue}>₹{val.toFixed(0)}</Text>
+                  </View>
+                  <View style={styles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: `${Math.min(pct, 100)}%` }]} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Recent Receipts Section */}
         <View style={styles.sectionHeader}>
@@ -185,5 +210,11 @@ const styles = StyleSheet.create({
   bannerDesc: { fontFamily: 'Inter_400Regular', fontSize: 13, color: Colors.text, marginTop: 8, lineHeight: 18 },
   upgradeBtn: { backgroundColor: Colors.primary, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginTop: 16 },
   upgradeBtnText: { color: '#FFF', fontFamily: 'Inter_700Bold', fontSize: 12 },
+  catRow: { marginBottom: 16 },
+  catInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  catLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.text },
+  catValue: { fontFamily: 'Outfit_700Bold', fontSize: 14, color: Colors.primary },
+  progressBarBg: { height: 8, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 4 },
 });
 

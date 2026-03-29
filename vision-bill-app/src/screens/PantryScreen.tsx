@@ -4,10 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Shimmer } from '../components/Shimmer';
-import axios from 'axios';
 import { ErrorView } from '../components/ErrorView';
-
 import { useQuery } from '@tanstack/react-query';
+import api from '../utils/api';
 
 export const PantryScreen = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -15,7 +14,7 @@ export const PantryScreen = () => {
   const { data: pantryItems = [], isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['pantry'],
     queryFn: async () => {
-      const resp = await axios.get('http://localhost:3000/pantry');
+      const resp = await api.get('/pantry');
       return resp.data;
     },
   });
