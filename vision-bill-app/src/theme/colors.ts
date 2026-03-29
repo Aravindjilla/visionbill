@@ -1,0 +1,15 @@
+export const Colors = {
+  primary: '#1A73E8',
+  onPrimary: '#FFFFFF',
+  surface: '#0F1117',
+  card: '#1A1D27',
+  text: '#FFFFFF',
+  textMuted: '#6B7280',
+  success: '#00C853',
+  error: '#FF5252',
+  border: '#2A2D37',
+  shimmer: '#2A2D37',
+  info: '#1A73E8',
+  chart1: '#4285F4',
+  chart2: '#34A853',
+};
