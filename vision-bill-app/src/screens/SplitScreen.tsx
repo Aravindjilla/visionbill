@@ -64,13 +64,25 @@ export const SplitScreen = () => {
 
   const handleWhatsApp = async (mobile: string, name: string, amount: number) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Find assigned items for this member
+    const targetMember = participants.find(p => p.mobile === mobile);
     const pItems = items.filter(i => 
-      i.assignedParticipants?.some(ap => ap.participantId === participants.find(p => p.mobile === mobile)?.id)
+      i.assignedParticipants?.some(ap => ap.participantId === targetMember?.id)
     );
-    const itemSummary = pItems.length > 0 ? `\n\nItems included: ${pItems.map(i => i.cleanName).join(', ')}` : '';
+
+    const itemLines = pItems.map(i => `• ${i.cleanName}: ₹${i.price}`).join('\n');
+    const upiLink = `upi://pay?pa=aravind@upi&pn=VisionBill&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`;
+    
     const message = encodeURIComponent(
-      `Hi ${name}, your share for VisionBill is ₹${amount.toFixed(2)}.${itemSummary}\n\nPay here: upi://pay?pa=your-upi-id@bank&pn=VisionBill&am=${amount.toFixed(2)}`
+      `💸 *VisionBill Split Request*\n\n` +
+      `Hey ${name}! Here's your share for the recent bill:\n` +
+      `💰 *Amount: ₹${amount.toFixed(2)}*\n\n` +
+      `${pItems.length > 0 ? `📦 *Items:*\n${itemLines}\n\n` : ''}` +
+      `⚡ *Pay instantly:* ${upiLink}\n\n` +
+      `Sent via VisionBill 🚀`
     );
+    
     Linking.openURL(`whatsapp://send?phone=${mobile}&text=${message}`);
   };
 
