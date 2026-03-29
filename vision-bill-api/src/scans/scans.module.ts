@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScansController } from './scans.controller';
@@ -13,6 +14,7 @@ import { ReconcilerService } from './services/reconciler.service';
 import { StitchingService } from './services/stitching.service';
 import { StrategyFactory } from './strategies/strategy.factory';
 import { StorageService } from './services/storage.service';
+import { ScanProcessor } from './scan.processor';
 
 import { PantryModule } from '../pantry/pantry.module';
 
@@ -25,6 +27,9 @@ import { PantryModule } from '../pantry/pantry.module';
     ]),
     PantryModule,
     ConfigModule,
+    BullModule.registerQueue({
+      name: 'scan-queue',
+    }),
   ],
   controllers: [ScansController],
   providers: [
@@ -35,6 +40,7 @@ import { PantryModule } from '../pantry/pantry.module';
     StitchingService,
     StrategyFactory,
     StorageService,
+    ScanProcessor,
   ],
   exports: [ScansService],
 })

@@ -12,6 +12,9 @@ import { StorageService } from './services/storage.service';
 import { ScanSession, ScanSessionDocument } from './schemas/scan-session.schema';
 import { PantryService } from '../pantry/pantry.service';
 
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 @Injectable()
 export class ScansService {
   constructor(
@@ -24,6 +27,7 @@ export class ScansService {
     private stitchingService: StitchingService,
     private pantryService: PantryService,
     private storageService: StorageService,
+    @InjectQueue('scan-queue') private scanQueue: Queue,
   ) {}
 
   async createSession(userId: string) {
@@ -48,7 +52,6 @@ export class ScansService {
     return result;
   }
 
-
   async createScan(userId: string, files: any[]) {
     // 1. Image Stitching
     const stitchedPath = await this.stitchingService.stitchImages(files.map((f: any) => f.path || 'placeholder-url'));
@@ -56,45 +59,20 @@ export class ScansService {
     // 2. Upload to Cloud Storage
     const cloudUrl = await this.storageService.uploadImage(stitchedPath);
 
-    // 3. Initial Scan Creation
+    // 3. Initial Scan Creation (Status: PROCESSING)
     const scan = await this.scanModel.create({
       userId,
       imageUrl: cloudUrl,
       status: ScanStatus.PROCESSING,
     });
 
-    try {
-      // 2. OCR (Stubbed)
-      const rawText = await this.ocrService.processImage(scan.imageUrl);
-      
-      // 3. Normalize (Stubbed)
-      const normalizedData = await this.normalizerService.normalizeText(rawText);
-      
-      // 4. Strategy Normalization
-      const strategy = this.strategyFactory.getStrategy(normalizedData.billType);
-      const items = strategy.normalize(normalizedData.items);
-      
-      // 5. Reconcile
-      const isReconciled = this.reconcilerService.reconcile(items, normalizedData.total);
-      
-      // 6. Final Update
-      scan.rawText = rawText;
-      scan.items = items;
-      scan.extractedTotal = normalizedData.total;
-      scan.billType = normalizedData.billType;
-      scan.status = ScanStatus.COMPLETED;
-      
-      await scan.save();
-      
-      // Index to Pantry
-      await this.pantryService.indexScannedItems(userId, items);
-      
-      return { scan, isReconciled };
-    } catch (error) {
-      scan.status = ScanStatus.FAILED;
-      await scan.save();
-      throw error;
-    }
+    // 4. Offload to Background Queue
+    await this.scanQueue.add('process-scan', {
+      scanId: scan._id,
+      userId,
+    });
+
+    return { scan, status: 'Background processing started' };
   }
 
   async getScan(id: string) {

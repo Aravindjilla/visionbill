@@ -9,9 +9,20 @@ import { SplitModule } from './split/split.module';
 import { GroupsModule } from './groups/groups.module';
 import { PantryModule } from './pantry/pantry.module';
 
+import { BullModule } from '@nestjs/bullmq';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+        },
+      }),
+    }),
     AuthModule,
     ScansModule,
     SplitModule,
