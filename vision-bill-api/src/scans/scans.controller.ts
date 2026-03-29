@@ -1,4 +1,4 @@
-import { Controller, Post, UseInterceptors, UploadedFiles, Req, Get, Param, UseGuards, Body, UploadedFile } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFiles, Req, Get, Param, UseGuards, Body, UploadedFile, Delete } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { ScansService } from './scans.service';
 
@@ -43,7 +43,12 @@ export class ScansController {
   }
 
   @Get(':id')
-  async getScan(@Param('id') id: string) {
-    return this.scansService.getScan(id);
+  async findOne(@Param('id') id: string) {
+    return this.scansService.findById(id);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.scansService.remove(id);
   }
 }

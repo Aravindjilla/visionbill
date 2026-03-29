@@ -75,8 +75,12 @@ export class ScansService {
     return { scan, status: 'Background processing started' };
   }
 
-  async getScan(id: string) {
+  async findById(id: string) {
     return this.scanModel.findById(id).exec();
+  }
+
+  async remove(id: string) {
+    return this.scanModel.findByIdAndDelete(id).exec();
   }
 
   async findAll(userId: string) {

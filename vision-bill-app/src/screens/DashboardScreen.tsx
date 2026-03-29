@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -35,6 +35,28 @@ export const DashboardScreen = () => {
     const latest = receipts[0];
     const html = ExportService.generateReceiptHTML(latest);
     await ExportService.exportToPDF(html, `VisionBill_Receipt_${latest._id}`);
+  };
+
+  const handleDeleteScan = (id: string) => {
+    Alert.alert(
+      'Delete Scan',
+      'Are you sure you want to delete this scan? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/scans/${id}`);
+              queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete scan.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
@@ -283,9 +305,9 @@ const styles = StyleSheet.create({
   exportBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
   exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: Colors.text },
   savingsCard: { marginHorizontal: Spacing.lg, backgroundColor: Colors.card, borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderWidth: 1, borderColor: Colors.border },
+  activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: Colors.card, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
   savingsInfo: { flex: 1 },
   savingsTitle: { fontFamily: 'Inter_400Regular', fontSize: 12, color: Colors.textMuted },
   savingsAmount: { fontFamily: 'Outfit_700Bold', fontSize: 24, color: Colors.success, marginTop: 4 },
   savingsGoalText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.text, marginTop: 8 },
 });
-

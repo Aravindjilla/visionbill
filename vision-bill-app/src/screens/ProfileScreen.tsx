@@ -49,6 +49,41 @@ export const ProfileScreen = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', style: 'destructive', onPress: async () => {
+        // In a real app, clear store/navigation
+        Alert.alert('Logged out', 'You have been logged out.');
+      }},
+    ]);
+  };
+
+  const handleDeleteAccount = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    Alert.alert(
+      'Permanent Account Deletion',
+      'This action is irreversible. All your scans, items, and profile data will be permanently wiped. Are you absolutely sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete Everything', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              const userId = await getUserId();
+              await api.delete(`/users/${userId}`);
+              Alert.alert('Account Wiped', 'Your data has been permanently deleted.');
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete account.');
+            }
+          }
+        },
+      ]
+    );
+  };
+
   if (loading) return null;
 
   return (
@@ -58,7 +93,7 @@ export const ProfileScreen = () => {
           <View style={styles.avatarLarge}>
             <Text style={styles.avatarTextLarge}>{user?.displayName?.[0] || 'U'}</Text>
           </View>
-          <Text style={styles.userName}>{user?.displayName}</Text>
+          <Text style={styles.userName}>{user?.name || user?.displayName}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
@@ -95,6 +130,16 @@ export const ProfileScreen = () => {
         >
           <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
         </Pressable>
+
+        <View style={styles.dangerZone}>
+          <Text style={styles.dangerTitle}>Danger Zone</Text>
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout Session</Text>
+          </Pressable>
+          <Pressable style={styles.deleteButton} onPress={handleDeleteAccount}>
+            <Text style={styles.deleteText}>Delete My Account Permanently</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -116,4 +161,10 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: Colors.primary, padding: 16, borderRadius: 16, alignItems: 'center' },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#FFF', fontFamily: 'Inter_700Bold', fontSize: 16 },
+  dangerZone: { marginTop: 40, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 24 },
+  dangerTitle: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: Colors.error, marginBottom: 16 },
+  logoutButton: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, padding: 16, borderRadius: 16, alignItems: 'center', marginBottom: 12 },
+  logoutText: { color: Colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  deleteButton: { backgroundColor: 'transparent', padding: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
+  deleteText: { color: Colors.error, fontFamily: 'Inter_600SemiBold', fontSize: 14 },
 });

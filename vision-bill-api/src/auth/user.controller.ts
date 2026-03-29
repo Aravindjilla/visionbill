@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, Delete } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
 
@@ -18,6 +18,11 @@ export class UserController {
     @Body('upiId') upiId?: string,
   ) {
     return this.userService.updateProfile(id, { mobile, upiId });
+  }
+
+  @Delete(':id')
+  async deleteAccount(@Param('id') id: string) {
+    return this.userService.deleteAccount(id);
   }
 
   @Post('push-token/:id')
