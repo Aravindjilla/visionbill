@@ -4,13 +4,16 @@ import { Model } from 'mongoose';
 import { PantryItem, PantryItemDocument } from './schemas/pantry-item.schema';
 import { Scan, ScanDocument } from '../scans/schemas/scan.schema';
 
+import { CacheService } from './cache.service';
+
 @Injectable()
 export class PantryService {
   private readonly logger = new Logger(PantryService.name);
 
   constructor(
     @InjectModel(PantryItem.name) private pantryModel: Model<PantryItemDocument>,
-    @InjectModel(Scan.name) private scanModel: Model<ScanDocument>
+    @InjectModel(Scan.name) private scanModel: Model<ScanDocument>,
+    private cacheService: CacheService,
   ) {}
 
   async indexScannedItems(userId: string, items: any[]) {
@@ -42,13 +45,29 @@ export class PantryService {
         });
       }
     }
+
+    // Invalidate cache
+    await Promise.all([
+      this.cacheService.del(`stats:${userId}`),
+      this.cacheService.del(`pantry:${userId}`),
+    ]);
   }
 
   async getPantryItems(userId: string) {
-    return this.pantryModel.find({ userId }).sort({ updatedAt: -1 }).exec();
+    const cacheKey = `pantry:${userId}`;
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) return cached;
+
+    const items = await this.pantryModel.find({ userId }).sort({ updatedAt: -1 }).exec();
+    await this.cacheService.set(cacheKey, items, 3600); // 1hr cache
+    return items;
   }
 
   async getStats(userId: string) {
+    const cacheKey = `stats:${userId}`;
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) return cached;
+
     const [items, scans] = await Promise.all([
       this.pantryModel.find({ userId }).exec(),
       this.scanModel.find({ userId, status: 'completed' }).exec()
@@ -68,10 +87,13 @@ export class PantryService {
       }
     });
     
-    return {
+    const stats = {
       totalSpent, 
       savings,
       itemCount: items.length
     };
+
+    await this.cacheService.set(cacheKey, stats, 3600);
+    return stats;
   }
 }

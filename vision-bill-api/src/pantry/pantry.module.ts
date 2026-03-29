@@ -5,6 +5,8 @@ import { PantryService } from './pantry.service';
 import { PantryItem, PantryItemSchema } from './schemas/pantry-item.schema';
 import { Scan, ScanSchema } from '../scans/schemas/scan.schema';
 
+import { CacheService } from './cache.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -13,7 +15,7 @@ import { Scan, ScanSchema } from '../scans/schemas/scan.schema';
     ]),
   ],
   controllers: [PantryController],
-  providers: [PantryService],
-  exports: [PantryService],
+  providers: [PantryService, CacheService],
+  exports: [PantryService, CacheService],
 })
 export class PantryModule {}
