@@ -7,6 +7,7 @@ import { NormalizerService } from './services/normalizer.service';
 import { StrategyFactory } from './strategies/strategy.factory';
 import { ReconcilerService } from './services/reconciler.service';
 import { StitchingService } from './services/stitching.service';
+import { StorageService } from './services/storage.service';
 
 import { ScanSession, ScanSessionDocument } from './schemas/scan-session.schema';
 import { PantryService } from '../pantry/pantry.service';
@@ -22,6 +23,7 @@ export class ScansService {
     private reconcilerService: ReconcilerService,
     private stitchingService: StitchingService,
     private pantryService: PantryService,
+    private storageService: StorageService,
   ) {}
 
   async createSession(userId: string) {
@@ -51,10 +53,13 @@ export class ScansService {
     // 1. Image Stitching
     const stitchedPath = await this.stitchingService.stitchImages(files.map((f: any) => f.path || 'placeholder-url'));
 
-    // 2. Initial Scan Creation
+    // 2. Upload to Cloud Storage
+    const cloudUrl = await this.storageService.uploadImage(stitchedPath);
+
+    // 3. Initial Scan Creation
     const scan = await this.scanModel.create({
       userId,
-      imageUrl: stitchedPath,
+      imageUrl: cloudUrl,
       status: ScanStatus.PROCESSING,
     });
 

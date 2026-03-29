@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScansController } from './scans.controller';
 import { ScansService } from './scans.service';
@@ -11,6 +12,7 @@ import { NormalizerService } from './services/normalizer.service';
 import { ReconcilerService } from './services/reconciler.service';
 import { StitchingService } from './services/stitching.service';
 import { StrategyFactory } from './strategies/strategy.factory';
+import { StorageService } from './services/storage.service';
 
 import { PantryModule } from '../pantry/pantry.module';
 
@@ -22,6 +24,7 @@ import { PantryModule } from '../pantry/pantry.module';
       { name: ScanSession.name, schema: ScanSessionSchema },
     ]),
     PantryModule,
+    ConfigModule,
   ],
   controllers: [ScansController],
   providers: [
@@ -31,6 +34,7 @@ import { PantryModule } from '../pantry/pantry.module';
     ReconcilerService,
     StitchingService,
     StrategyFactory,
+    StorageService,
   ],
   exports: [ScansService],
 })
