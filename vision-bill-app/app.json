@@ -1,25 +1,41 @@
 {
   "expo": {
-    "name": "vision-bill-app",
-    "slug": "vision-bill-app",
+    "name": "VisionBill",
+    "slug": "visionbill",
     "version": "1.0.0",
+    "description": "AI-Powered Smart Receipt Scanner and Shared Pantry Tracker",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "primaryColor": "#6366f1",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aravindjilla.visionbill",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow VisionBill to scan your receipts.",
+        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images.",
+        "NSLocationWhenInUseUsageDescription": "To track your shopping habits by store."
+      }
     },
     "android": {
+      "package": "com.aravindjilla.visionbill",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "NOTIFICATIONS"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
