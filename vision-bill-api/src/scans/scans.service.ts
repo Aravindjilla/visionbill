@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as path from 'path';
+import * as fs from 'fs';
+const pdf = require('pdf-img-convert');
+
 import { Scan, ScanDocument, ScanStatus } from './schemas/scan.schema';
 import { OcrService } from './services/ocr.service';
 import { NormalizerService } from './services/normalizer.service';
@@ -15,7 +19,6 @@ import { PantryService } from '../pantry/pantry.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { User, UserDocument } from '../auth/schemas/user.schema';
-import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class ScansService {
@@ -87,6 +90,59 @@ export class ScansService {
     await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
 
     return { scan, status: 'Background processing started' };
+  }
+
+  async processPdfScan(userId: string, file: any) {
+    // 0. Tier & Limit Check
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new BadRequestException('User not found');
+    
+    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= 5) {
+      throw new BadRequestException('Monthly scan limit reached for Free tier. Please upgrade to Pro.');
+    }
+
+    // 1. Convert PDF to Images
+    // pdf-img-convert converts each page to a base64 string or buffer
+    const pageImages = await pdf.convert(file.path, {
+      width: 1080,
+      format: 'jpeg',
+    });
+
+    // 2. Upload individual pages to local storage to get paths for stitching
+    const segmentPaths: string[] = [];
+    const tempDir = path.join(process.cwd(), 'uploads', 'temp_pdf');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    for (let i = 0; i < pageImages.length; i++) {
+      const pagePath = path.join(tempDir, `pdf_${Date.now()}_${i}.jpg`);
+      fs.writeFileSync(pagePath, pageImages[i]);
+      segmentPaths.push(pagePath);
+    }
+
+    // 3. Reuse stitching and upload logic
+    const stitchedPath = await this.stitchingService.stitchImages(segmentPaths);
+    const cloudUrl = await this.storageService.uploadImage(stitchedPath);
+
+    // 4. Initial Scan Creation (Status: PROCESSING)
+    const scan = await this.scanModel.create({
+      userId,
+      imageUrl: cloudUrl,
+      status: ScanStatus.PROCESSING,
+    });
+
+    // 5. Offload to Background Queue
+    await this.scanQueue.add('process-scan', {
+      scanId: scan._id,
+      userId,
+    });
+
+    // 6. Increment usage
+    await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
+
+    // Cleanup temp files
+    segmentPaths.forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
+
+    return { scan, status: 'PDF processing started' };
   }
 
   async findById(id: string) {

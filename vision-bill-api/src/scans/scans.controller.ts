@@ -40,6 +40,16 @@ export class ScansController {
     return this.scansService.createScan(userId, files);
   }
 
+  @Post('upload-pdf')
+  @UseInterceptors(FileInterceptor('pdf'))
+  async uploadPdf(@UploadedFile() file: any, @Req() req: any) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    return this.scansService.processPdfScan(userId, file);
+  }
+
   @Get()
   async findAll(@Req() req: any) {
     const userId = req.user?.sub;

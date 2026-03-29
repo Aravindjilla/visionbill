@@ -14,6 +14,7 @@ import axios from 'axios';
 import api from '../utils/api';
 
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import LottieView from 'lottie-react-native';
 
 export const ScannerScreen = ({ navigation, route }: any) => {
@@ -144,6 +145,43 @@ export const ScannerScreen = ({ navigation, route }: any) => {
     }
   };
 
+  const pickPdf = async () => {
+    // Audit check: Ensure scan limits are respected
+    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+      setPaywallVisible(true);
+      return;
+    }
+
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'application/pdf',
+      multiple: false,
+    });
+
+    if (!result.canceled) {
+      setLoading(true, 'Extracting pages from PDF...');
+      try {
+        const formData = new FormData();
+        formData.append('pdf', {
+          uri: result.assets[0].uri,
+          name: result.assets[0].name,
+          type: 'application/pdf',
+        } as any);
+
+        const response = await api.post<ScanResponse>('/scans/upload-pdf', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        setScan(response.data.scan);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        navigation.navigate('Verification');
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'PDF processing failed');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   if (!permission) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -237,9 +275,14 @@ export const ScannerScreen = ({ navigation, route }: any) => {
             </ScrollView>
 
             <View style={styles.controls}>
-              <Pressable onPress={pickImage} style={styles.galleryButton}>
-                <Text style={styles.galleryIcon}>🖼️</Text>
-              </Pressable>
+              <View style={styles.sideControls}>
+                <Pressable onPress={pickImage} style={styles.smallIconBtn}>
+                  <Text style={styles.smallIcon}>🖼️</Text>
+                </Pressable>
+                <Pressable onPress={pickPdf} style={styles.smallIconBtn}>
+                  <Text style={styles.smallIcon}>📄</Text>
+                </Pressable>
+              </View>
 
               <Pressable 
                 disabled={loading}
@@ -294,8 +337,9 @@ const styles = StyleSheet.create({
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
   captureButton: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.text },
-  galleryButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', position: 'absolute', left: 40 },
-  galleryIcon: { fontSize: 24 },
+  sideControls: { position: 'absolute', left: 40, flexDirection: 'row', gap: 12 },
+  smallIconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  smallIcon: { fontSize: 20 },
   finishButton: { position: 'absolute', right: 40, backgroundColor: Colors.success, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   finishButtonText: { ...Typography.bodyBold, color: Colors.onPrimary },
   errorBanner: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 200, backgroundColor: 'rgba(239,68,68,0.92)', padding: 12, alignItems: 'center' },
