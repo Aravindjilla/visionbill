@@ -19,6 +19,12 @@ export class StitchingService {
     const maxWidth = Math.max(...images.map((img) => img.width));
     const totalHeight = images.reduce((acc, img) => acc + img.height, 0);
 
+    // Performance Audit Guard: Prevent OOM on massive image clusters
+    const MAX_PIXELS = 100 * 1000 * 1000; // 100 Megapixels limit
+    if (maxWidth * totalHeight > MAX_PIXELS) {
+      throw new Error(`Stitching exceeded safety limit of 100MP (${(maxWidth * totalHeight / 1000000).toFixed(1)}MP). Please split into fewer segments.`);
+    }
+
     const outputFileName = `stitched-${Date.now()}.jpg`;
     const outputPath = path.join(path.dirname(imagePaths[0]), outputFileName);
 
@@ -39,7 +45,7 @@ export class StitchingService {
         },
       })
         .composite(compositeInput)
-        .jpeg()
+        .jpeg({ quality: 80, mozjpeg: true })
         .toFile(outputPath);
 
       // Successfully stitched, now cleanup segments

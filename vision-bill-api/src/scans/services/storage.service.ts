@@ -23,23 +23,32 @@ export class StorageService {
     
     if (isMock) {
       this.logger.log(`Mock upload for ${filePath}`);
-      return filePath; // In mock mode, we just return the local path
-    }
-
-    try {
-      const result = await cloudinary.uploader.upload(filePath, {
-        folder: 'vision-bill/receipts',
-        resource_type: 'image',
-      });
-      
-      // Cleanup local file after upload
-      await fs.unlink(filePath);
-      
-      return result.secure_url;
-    } catch (error) {
-      this.logger.error(`Cloudinary upload failed: ${error.message}`);
-      // Fallback to local path if upload fails to keep the app working
       return filePath;
     }
+
+    const MAX_RETRIES = 3;
+    let attempt = 0;
+
+    while (attempt < MAX_RETRIES) {
+      try {
+        attempt++;
+        const result = await cloudinary.uploader.upload(filePath, {
+          folder: 'vision-bill/receipts',
+          resource_type: 'image',
+        });
+        
+        await fs.unlink(filePath);
+        return result.secure_url;
+      } catch (error) {
+        this.logger.warn(`Cloudinary upload attempt ${attempt} failed: ${error.message}`);
+        if (attempt >= MAX_RETRIES) {
+          this.logger.error(`Cloudinary upload failed after ${MAX_RETRIES} attempts. Keeping local file for failover.`);
+          return filePath;
+        }
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    return filePath;
   }
 }

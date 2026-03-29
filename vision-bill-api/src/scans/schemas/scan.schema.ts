@@ -17,7 +17,7 @@ export enum BillType {
   RESTAURANT = 'restaurant',
 }
 
-@Schema({ timestamps: true, indexes: [{ userId: 1, status: 1, createdAt: -1 }] })
+@Schema({ timestamps: true })
 export class Scan {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   userId: string;
@@ -57,3 +57,4 @@ export class Scan {
 }
 
 export const ScanSchema = SchemaFactory.createForClass(Scan);
+ScanSchema.index({ userId: 1, status: 1, createdAt: -1 });

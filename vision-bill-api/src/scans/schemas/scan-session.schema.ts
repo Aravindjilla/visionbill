@@ -16,6 +16,9 @@ export class ScanSession {
 
   @Prop()
   billType?: string;
+
+  @Prop({ default: Date.now, expires: '24h' })
+  createdAt: Date;
 }
 
 export const ScanSessionSchema = SchemaFactory.createForClass(ScanSession);

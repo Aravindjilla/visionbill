@@ -72,10 +72,16 @@ export class ScansController {
   }
 
   @Get()
-  async findAll(@Req() req: any) {
-    const userId = req.user?.sub;
-    if (!userId) throw new Error('Unauthorized');
-    return this.scansService.findAll(userId);
+  async findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+    @Query('page') page?: string,
+  ) {
+    return this.scansService.findAll(
+      req.user.sub,
+      limit ? parseInt(limit, 10) : undefined,
+      page ? parseInt(page, 10) : 1,
+    );
   }
 
   @Get(':id')

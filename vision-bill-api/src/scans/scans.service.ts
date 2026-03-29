@@ -163,7 +163,7 @@ export class ScansService {
 
   async findById(id: string): Promise<ScanDocument> {
     const scan = await this.scanModel.findById(id).exec();
-    if (!scan) throw new Error('Scan not found');
+    if (!scan) throw new NotFoundException('Scan not found');
     return scan;
   }
 

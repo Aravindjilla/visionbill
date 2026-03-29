@@ -89,7 +89,7 @@ export class NormalizerService {
       const cleanJson = text.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (error) {
-      console.error('Gemini Normalization failed:', error);
+      this.logger.error('Gemini Normalization failed', error instanceof Error ? error.stack : String(error));
       throw error;
     }
   }

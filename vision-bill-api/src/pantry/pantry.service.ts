@@ -120,19 +120,22 @@ export class PantryService {
     if (cached) return cached;
 
     // Use aggregation for volume/heavy data
-    const [scanStats, savingsData, itemsCount] = await Promise.all([
+    const [facetResult, savingsData, itemsCount] = await Promise.all([
+      // $facet keeps totalSpent and byCategory in separate pipelines so $unwind
+      // does not cause extractedTotal to be counted once per item
       this.scanModel.aggregate([
         { $match: { userId, status: 'completed' } },
-        { $unwind: '$items' },
         {
-          $group: {
-            _id: null,
-            totalSpent: { $sum: '$extractedTotal' },
-            byCategory: {
-              $push: { k: '$items.category', v: '$items.price' }
-            }
-          }
-        }
+          $facet: {
+            totals: [
+              { $group: { _id: null, totalSpent: { $sum: '$extractedTotal' } } },
+            ],
+            categories: [
+              { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
+              { $group: { _id: '$items.category', total: { $sum: '$items.price' } } },
+            ],
+          },
+        },
       ]).exec(),
       this.pantryModel.aggregate([
         { $match: { userId } },
@@ -153,12 +156,12 @@ export class PantryService {
     ]);
 
     // Format aggregate results
-    const totalSpent = scanStats[0]?.totalSpent || 0;
+    const totalSpent = facetResult[0]?.totals?.[0]?.totalSpent || 0;
     const savings = savingsData[0]?.totalSavings || 0;
     const byCategory: { [key: string]: number } = {};
-    
-    // Process category counts from aggregation if needed or just use a second group stage
-    // For now I'll use the results we have
+    (facetResult[0]?.categories || []).forEach(({ _id, total }: { _id: string; total: number }) => {
+      if (_id) byCategory[_id] = total;
+    });
     
     // Streaks and Badges need recent data
     const recentScans = await this.scanModel.find({ userId, status: 'completed' })
@@ -178,7 +181,7 @@ export class PantryService {
       totalSpent,
       savings,
       itemCount: itemsCount,
-      byCategory, // Category aggregation could be refined further
+      byCategory,
       scanStreak,
       badges,
     };
