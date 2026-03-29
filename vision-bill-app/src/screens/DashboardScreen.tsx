@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -11,6 +11,7 @@ const { width } = Dimensions.get('window');
 
 export const DashboardScreen = () => {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [stats, setStats] = useState<any[]>([]);
   const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
@@ -19,8 +20,9 @@ export const DashboardScreen = () => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
+  const fetchDashboardData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(false);
     try {
       const [statsResp, scansResp] = await Promise.all([
@@ -41,6 +43,7 @@ export const DashboardScreen = () => {
       setError(true);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -50,7 +53,13 @@ export const DashboardScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchDashboardData(true)} />
+        }
+      >
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeText}>Good Morning,</Text>

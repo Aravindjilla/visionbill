@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -10,6 +10,7 @@ import { ErrorView } from '../components/ErrorView';
 export const PantryScreen = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [pantryItems, setPantryItems] = useState<any[]>([]);
 
@@ -17,8 +18,9 @@ export const PantryScreen = () => {
     fetchPantryItems();
   }, []);
 
-  const fetchPantryItems = async () => {
-    setLoading(true);
+  const fetchPantryItems = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(false);
     try {
       const resp = await axios.get('http://localhost:3000/pantry');
@@ -28,6 +30,7 @@ export const PantryScreen = () => {
       setError(true);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -73,6 +76,9 @@ export const PantryScreen = () => {
         <FlatList
           data={pantryItems}
           keyExtractor={item => item._id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => fetchPantryItems(true)} />
+          }
           renderItem={({ item }) => {
             const tendency = getTendency(item);
             return (
