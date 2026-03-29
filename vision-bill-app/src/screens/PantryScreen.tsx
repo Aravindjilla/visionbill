@@ -7,36 +7,25 @@ import { Shimmer } from '../components/Shimmer';
 import axios from 'axios';
 import { ErrorView } from '../components/ErrorView';
 
+import { useQuery } from '@tanstack/react-query';
+
 export const PantryScreen = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
-  const [pantryItems, setPantryItems] = useState<any[]>([]);
 
-  React.useEffect(() => {
-    fetchPantryItems();
-  }, []);
-
-  const fetchPantryItems = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(false);
-    try {
+  const { data: pantryItems = [], isLoading, isError, refetch, isRefetching } = useQuery({
+    queryKey: ['pantry'],
+    queryFn: async () => {
       const resp = await axios.get('http://localhost:3000/pantry');
-      setPantryItems(resp.data);
-    } catch (err) {
-      console.error('Fetch pantry failed', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+      return resp.data;
+    },
+  });
 
-  if (error) {
-    return <ErrorView onRetry={fetchPantryItems} />;
+  if (isError) {
+    return <ErrorView onRetry={() => refetch()} />;
   }
+
+  const loading = isLoading && pantryItems.length === 0;
+  const refreshing = isRefetching;
 
   const getTendency = (item: any) => {
     if (!item.lastPrice || item.currentPrice === item.lastPrice) return 'stable';
@@ -77,7 +66,7 @@ export const PantryScreen = () => {
           data={pantryItems}
           keyExtractor={item => item._id}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => fetchPantryItems(true)} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => refetch()} />
           }
           renderItem={({ item }) => {
             const tendency = getTendency(item);

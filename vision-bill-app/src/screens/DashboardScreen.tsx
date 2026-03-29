@@ -9,47 +9,38 @@ import { ErrorView } from '../components/ErrorView';
 
 const { width } = Dimensions.get('window');
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 export const DashboardScreen = () => {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
-  const [stats, setStats] = useState<any[]>([]);
-  const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
+  const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(false);
-    try {
+  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => {
       const [statsResp, scansResp] = await Promise.all([
         axios.get('http://localhost:3000/pantry/stats'),
         axios.get('http://localhost:3000/scans'),
       ]);
 
-      const realStats = [
-        { label: 'Total Spent', value: `₹${statsResp.data.totalSpent?.toFixed(0) || 0}`, change: '+0%', pos: false },
-        { label: 'Saved', value: `₹${statsResp.data.savings?.toFixed(0) || 0}`, change: '0%', pos: true },
-        { label: 'Items', value: `${statsResp.data.itemCount || 0}`, change: 'Pantry', pos: true },
-      ];
+      return {
+        stats: [
+          { label: 'Total Spent', value: `₹${statsResp.data.totalSpent?.toFixed(0) || 0}`, change: '+0%', pos: false },
+          { label: 'Saved', value: `₹${statsResp.data.savings?.toFixed(0) || 0}`, change: '0%', pos: true },
+          { label: 'Items', value: `${statsResp.data.itemCount || 0}`, change: 'Pantry', pos: true },
+        ],
+        recentReceipts: scansResp.data,
+      };
+    },
+  });
 
-      setStats(realStats);
-      setRecentReceipts(scansResp.data);
-    } catch (err) {
-      console.error('Fetch dashboard data failed', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  if (error) {
-    return <ErrorView onRetry={fetchDashboardData} />;
+  if (isError) {
+    return <ErrorView onRetry={() => refetch()} />;
   }
+
+  const loading = isLoading && !data;
+  const refreshing = isRefetching;
+  const stats = data?.stats || [];
+  const recentReceipts = data?.recentReceipts || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,7 +48,7 @@ export const DashboardScreen = () => {
         contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => fetchDashboardData(true)} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => refetch()} />
         }
       >
         <View style={styles.header}>

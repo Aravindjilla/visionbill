@@ -17,7 +17,25 @@ import { GroupsScreen } from './src/screens/GroupsScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { PantryScreen } from './src/screens/PantryScreen';
 
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
+
+const asyncStoragePersister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+});
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -111,21 +129,26 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: Colors.surface },
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="Verification" component={VerificationScreen} />
-        <Stack.Screen name="Split" component={SplitScreen} />
-        <Stack.Screen name="Groups" component={GroupsScreen} />
-        <Stack.Screen name="Scanner" component={ScannerScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: asyncStoragePersister }}
+    >
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: Colors.surface },
+          }}
+        >
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Verification" component={VerificationScreen} />
+          <Stack.Screen name="Split" component={SplitScreen} />
+          <Stack.Screen name="Groups" component={GroupsScreen} />
+          <Stack.Screen name="Scanner" component={ScannerScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </PersistQueryClientProvider>
   );
 }
