@@ -27,16 +27,20 @@ export class AuthService {
   async generateTokens(user: UserDocument) {
     const payload = { email: user.email, sub: user._id };
     
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     
     user.currentRefreshToken = refreshToken;
     await user.save();
     
     return {
-      user,
       accessToken,
       refreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        displayName: user.displayName,
+      }
     };
   }
 

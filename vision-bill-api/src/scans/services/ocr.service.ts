@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs/promises';
+import { NormalizerService } from './normalizer.service';
 
 @Injectable()
 export class OcrService {
@@ -39,7 +40,7 @@ export class OcrService {
       
       const result = await this.model.generateContent([prompt, imagePart]);
       const response = await result.response;
-      return response.text();
+      return NormalizerService.scrubPII(response.text());
     } catch (error) {
       this.logger.error('[OCR] Gemini OCR processing failed:', error.message);
       throw error;

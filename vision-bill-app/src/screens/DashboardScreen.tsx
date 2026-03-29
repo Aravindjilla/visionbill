@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   exportActions: { flexDirection: 'row', marginTop: 8 },
   exportBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
   exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: Colors.text },
-  savingsCard: { marginHorizontal: Spacing.lg, backgroundColor: Colors.card, borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderWidth: 1, borderColor: Colors.border },
+  savingsCard: { marginHorizontal: Spacing.lg, backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.2)' },
   activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: Colors.card, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
   savingsInfo: { flex: 1 },
   savingsTitle: { fontFamily: 'Inter_400Regular', fontSize: 12, color: Colors.textMuted },

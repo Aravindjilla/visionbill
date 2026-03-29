@@ -10,10 +10,15 @@ import { GroupsModule } from './groups/groups.module';
 import { PantryModule } from './pantry/pantry.module';
 
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{
+      ttl: 900000, // 15 minutes
+      limit: 100,
+    }]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -170,7 +170,10 @@ const MainTabs = () => (
   </Tab.Navigator>
 );
 
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+
 export default function App() {
+  const [showOnboarding, setShowOnboarding] = React.useState(true);
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -187,6 +190,10 @@ export default function App() {
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
+
+  if (showOnboarding) {
+    return <OnboardingScreen onFinish={() => setShowOnboarding(false)} />;
+  }
 
   return (
     <PersistQueryClientProvider

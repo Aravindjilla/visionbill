@@ -13,7 +13,8 @@ export class NormalizerService {
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  private scrubPII(text: string): string {
+  static scrubPII(text: string): string {
+    if (!text) return '';
     return text
       // Mask Card Numbers (e.g., 4111-12XX-XXXX-1111)
       .replace(/\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}/g, '**** **** **** ****')
@@ -26,7 +27,7 @@ export class NormalizerService {
   }
 
   async normalizeText(rawText: string): Promise<any> {
-    const cleanText = this.scrubPII(rawText);
+    const cleanText = NormalizerService.scrubPII(rawText);
     
     if (!this.configService.get<string>('GEMINI_API_KEY') || this.configService.get<string>('GEMINI_API_KEY') === 'mock-gemini-key') {
       // Return stub for development

@@ -89,6 +89,35 @@ export const PantryScreen = () => {
                     <Text style={styles.itemUnit}>{item.unit || 'unit'}</Text>
                   </View>
                 </View>
+
+                {/* Sparkline integration */}
+                {item.priceHistory?.length > 1 && (
+                  <View style={styles.sparklineContainer}>
+                    <LineChart
+                      data={{
+                        labels: [],
+                        datasets: [{ data: item.priceHistory.slice(-5).map((h: any) => Number(h.price)) }]
+                      }}
+                      width={80}
+                      height={40}
+                      chartConfig={{
+                        backgroundColor: 'transparent',
+                        backgroundGradientFrom: 'transparent',
+                        backgroundGradientTo: 'transparent',
+                        color: (opacity = 1) => item.currentPrice > item.lastPrice ? `rgba(239, 68, 68, ${opacity})` : `rgba(16, 185, 129, ${opacity})`,
+                        propsForDots: { r: "0" }
+                      }}
+                      withDots={false}
+                      withInnerLines={false}
+                      withOuterLines={false}
+                      withVerticalLines={false}
+                      withHorizontalLines={false}
+                      bezier
+                      style={{ paddingRight: 0, paddingLeft: 0 }}
+                    />
+                  </View>
+                )}
+
                 <View style={styles.itemRight}>
                   <Text style={styles.itemPrice}>₹{item.currentPrice}</Text>
                   <View style={styles.tendencyRow}>
@@ -176,11 +205,12 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: Spacing.lg },
   itemCard: { flexDirection: 'row', backgroundColor: Colors.card, padding: 16, borderRadius: 16, marginBottom: 12, alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.border },
   itemCardActive: { borderColor: Colors.primary, backgroundColor: 'rgba(26, 115, 232, 0.05)' },
-  itemMain: { flexDirection: 'row', alignItems: 'center' },
+  itemMain: { flexDirection: 'row', alignItems: 'center', flex: 1.5 },
+  sparklineContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   itemIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   itemName: { fontFamily: 'Inter_700Bold', fontSize: 16, color: Colors.text },
   itemUnit: { fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.textMuted },
-  itemRight: { alignItems: 'flex-end' },
+  itemRight: { alignItems: 'flex-end', flex: 0.8 },
   itemPrice: { fontFamily: 'Outfit_600SemiBold', fontSize: 18, color: Colors.text },
   tendencyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   tendencyText: { fontSize: 10, marginLeft: 4, fontFamily: 'Inter_700Bold' },
