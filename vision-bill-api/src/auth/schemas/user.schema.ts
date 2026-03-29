@@ -26,6 +26,9 @@ export class User {
   @Prop()
   pushToken?: string;
 
+  @Prop({ default: 500 })
+  savingsGoal?: number;
+
   @Prop()
   currentRefreshToken?: string;
 

@@ -17,7 +17,7 @@ import LottieView from 'lottie-react-native';
 export const ScannerScreen = ({ navigation }: any) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState<any>(null);
-  const { addImage, currentImages, clearImages, setScan, setLoading, loading, loadingMessage } = useScanStore();
+  const { addImage, currentImages, clearImages, setScan, setLoading, setError, loading, loadingMessage, error } = useScanStore();
   const [isLongBill, setIsLongBill] = useState(false);
 
   useEffect(() => {
@@ -71,10 +71,11 @@ export const ScannerScreen = ({ navigation }: any) => {
       clearImages();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate('Verification');
-    } catch (error) {
+    } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      console.error('Scan failed', error);
-      // Mock Fallback
+      const message = err?.response?.data?.message || err?.message || 'Scan failed. Using demo data.';
+      setError(message);
+      // Mock Fallback for dev/demo
       setScan({
         _id: 'mock-id',
         userId: 'demo-user-id',
@@ -131,6 +132,14 @@ export const ScannerScreen = ({ navigation }: any) => {
   
   return (
     <View style={styles.container}>
+      {!!error && (
+        <Pressable
+          style={styles.errorBanner}
+          onPress={() => setError(null)}
+        >
+          <Text style={styles.errorBannerText}>⚠️ {error} — tap to dismiss</Text>
+        </Pressable>
+      )}
       {loading && (
         <View style={styles.loadingOverlay}>
           <LottieView 
@@ -242,6 +251,8 @@ const styles = StyleSheet.create({
   captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.text },
   finishButton: { position: 'absolute', right: 40, backgroundColor: Colors.success, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   finishButtonText: { ...Typography.bodyBold, color: Colors.onPrimary },
+  errorBanner: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 200, backgroundColor: 'rgba(239,68,68,0.92)', padding: 12, alignItems: 'center' },
+  errorBannerText: { color: '#FFF', fontFamily: 'Inter_600SemiBold', fontSize: 12, textAlign: 'center' },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingLottie: { width: 250, height: 250 },
   loadingText: { color: Colors.text, ...Typography.h3, textAlign: 'center', marginTop: 20 },

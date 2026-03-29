@@ -10,13 +10,16 @@ interface ScanState {
   loading: boolean;
   loadingMessage: string;
   error: string | null;
+  lastDeleted: Scan | null;
   setScan: (scan: Scan) => void;
+  setLastDeleted: (scan: Scan | null) => void;
   toggleItem: (index: number) => void;
   toggleParticipantAssignment: (itemIndex: number, participantId: string) => void;
   updateItemPrice: (index: number, newPrice: number) => void;
   addImage: (image: any) => void;
   clearImages: () => void;
   setLoading: (loading: boolean, message?: string) => void;
+  setError: (error: string | null) => void;
 }
 
 export const useScanStore = create<ScanState>()(
@@ -28,6 +31,7 @@ export const useScanStore = create<ScanState>()(
       loading: false,
       loadingMessage: '',
       error: null,
+      lastDeleted: null,
       setScan: (scan: Scan) => set({ 
         currentScan: scan, 
         items: (scan.items || []).map((item) => ({ 
@@ -37,6 +41,7 @@ export const useScanStore = create<ScanState>()(
           isSplit: false
         })) 
       }),
+      setLastDeleted: (scan) => set({ lastDeleted: scan }),
 
       toggleItem: (index) => set((state) => {
         const newItems = [...state.items];
@@ -80,6 +85,7 @@ export const useScanStore = create<ScanState>()(
       addImage: (image: any) => set((state) => ({ currentImages: [...state.currentImages, image] })),
       clearImages: () => set({ currentImages: [] }),
       setLoading: (loading, message = '') => set({ loading, loadingMessage: message }),
+      setError: (error) => set({ error }),
     }),
     {
       name: 'vision-bill-scan-store',

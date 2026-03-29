@@ -9,6 +9,7 @@ export enum ScanStatus {
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
+  DELETED = 'deleted',
 }
 
 export enum BillType {
@@ -26,6 +27,9 @@ export class Scan {
 
   @Prop()
   rawText?: string;
+
+  @Prop()
+  storeName?: string;
 
   @Prop({ type: [BillItemSchema], default: [] })
   items: BillItem[];

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Request } from '@nestjs/common';
 import { PantryService } from './pantry.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -16,5 +16,17 @@ export class PantryController {
   async getStats(@Request() req: any) {
     const userId = req.user?.userId || 'demo-user-id';
     return this.pantryService.getStats(userId);
+  }
+
+  @Get('weekly-trend')
+  async getWeeklyTrend(@Request() req: any) {
+    const userId = req.user?.userId || 'demo-user-id';
+    return this.pantryService.getWeeklyTrend(userId);
+  }
+
+  @Post('recipes')
+  async suggestRecipes(@Request() req: any) {
+    const userId = req.user?.userId || 'demo-user-id';
+    return this.pantryService.suggestRecipes(userId);
   }
 }

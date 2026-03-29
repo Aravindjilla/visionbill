@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
 import { MotiView, MotiText } from 'moti';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../theme/colors';
+import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
 interface ItemCardProps {
@@ -12,6 +12,7 @@ interface ItemCardProps {
   savings?: number;
   imageUrl?: string;
   checked: boolean;
+  isSplit?: boolean;
   onToggle: () => void;
   onPriceChange?: (newPrice: number) => void;
 }
@@ -23,9 +24,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   savings,
   imageUrl,
   checked,
+  isSplit,
   onToggle,
   onPriceChange,
 }) => {
+  const theme = useTheme();
   const [internalPrice, setInternalPrice] = React.useState(price.toString());
   
   // Keep internal price sync'd if external price changes
@@ -45,7 +48,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           scale: checked ? 0.98 : 1,
         }}
         transition={{ type: 'spring', damping: 15 }}
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}
       >
         <View style={styles.left}>
           <View style={styles.imageContainer}>
@@ -63,16 +66,23 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         </View>
 
         <View style={styles.center}>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.qty}>{qty}</Text>
+          <Text style={[styles.name, { color: theme.text }]}>{name}</Text>
+          <View style={styles.qtyRow}>
+            <Text style={[styles.qty, { color: theme.textMuted }]}>{qty}</Text>
+            {isSplit && (
+              <View style={styles.splitBadge}>
+                <Text style={styles.splitBadgeText}>⚡ Split</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.right}>
           {onPriceChange ? (
-            <View style={styles.editPriceContainer}>
-              <Text style={styles.currencySymbol}>₹</Text>
+            <View style={[styles.editPriceContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.currencySymbol, { color: theme.textMuted }]}>₹</Text>
               <TextInput
-                style={styles.priceInput}
+                style={[styles.priceInput, { color: theme.text }]}
                 value={internalPrice}
                 onChangeText={setInternalPrice}
                 keyboardType="decimal-pad"
@@ -87,7 +97,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               />
             </View>
           ) : (
-            <Text style={styles.price}>₹{price.toFixed(2)}</Text>
+            <Text style={[styles.price, { color: theme.text }]}>₹{price.toFixed(2)}</Text>
           )}
           {savings && (
             <View style={styles.savingsBadge}>
@@ -99,10 +109,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <View style={styles.checkboxContainer}>
           <MotiView
             animate={{
-              backgroundColor: checked ? Colors.success : 'transparent',
-              borderColor: checked ? Colors.success : Colors.border,
+              backgroundColor: checked ? theme.success : 'transparent',
+              borderColor: checked ? theme.success : theme.border,
             }}
-            style={styles.checkbox}
+            style={[styles.checkbox, { borderColor: theme.border }]}
           >
             {checked && (
               <MotiText
@@ -176,12 +186,10 @@ const styles = StyleSheet.create({
   editPriceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   currencySymbol: {
     fontFamily: 'Inter_700Bold',
@@ -208,6 +216,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.success,
   },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  splitBadge: { backgroundColor: 'rgba(99,102,241,0.12)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  splitBadgeText: { fontFamily: 'Inter_700Bold', fontSize: 9, color: '#6366F1' },
   checkboxContainer: {
     marginLeft: Spacing.sm,
   },

@@ -1,5 +1,7 @@
-export const Colors = {
-  primary: '#6366F1', // Electric Indigo
+import { useColorScheme } from 'react-native';
+
+export const DarkTheme = {
+  primary: '#6366F1',
   onPrimary: '#FFFFFF',
   surface: '#0F1117',
   surfaceLight: '#1A1D27',
@@ -10,8 +12,8 @@ export const Colors = {
   glassError: 'rgba(239, 68, 68, 0.1)',
   text: '#FFFFFF',
   textMuted: '#94A3B8',
-  success: '#10B981', // Vivid Emerald
-  error: '#EF4444', // Bright Rose
+  success: '#10B981',
+  error: '#EF4444',
   border: '#1E293B',
   shimmer: '#1E293B',
   info: '#6366F1',
@@ -20,3 +22,35 @@ export const Colors = {
   chart2: '#10B981',
   accent: '#A855F7',
 };
+
+export const LightTheme = {
+  primary: '#4F46E5', // Slightly darker indigo for visibility
+  onPrimary: '#FFFFFF',
+  surface: '#F8FAFC',
+  surfaceLight: '#FFFFFF',
+  surfaceDark: '#E2E8F0',
+  card: '#FFFFFF', // Solid card for light mode
+  glassPrimary: 'rgba(79, 70, 229, 0.08)',
+  glassSuccess: 'rgba(22, 163, 74, 0.1)',
+  glassError: 'rgba(220, 38, 38, 0.1)',
+  text: '#0F172A',
+  textMuted: '#64748B',
+  success: '#16A34A',
+  error: '#DC2626',
+  border: '#E2E8F0',
+  shimmer: '#F1F5F9',
+  info: '#4F46E5',
+  warning: '#D97706',
+  chart1: '#4F46E5',
+  chart2: '#16A34A',
+  accent: '#9333EA',
+};
+
+// Default export as dynamic object (for simple usage where hooks can't be used)
+export const Colors = DarkTheme;
+
+export const useTheme = () => {
+  const scheme = useColorScheme();
+  return scheme === 'light' ? LightTheme : DarkTheme;
+};
+

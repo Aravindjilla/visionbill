@@ -17,6 +17,7 @@ export interface Scan {
   items: BillItem[];
   extractedTotal: number;
   billType: 'grocery' | 'restaurant';
+  storeName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: string;
 }

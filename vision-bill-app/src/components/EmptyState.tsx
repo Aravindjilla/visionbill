@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { Colors } from '../theme/colors';
+import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
 interface EmptyStateProps {
@@ -9,28 +9,44 @@ interface EmptyStateProps {
   title: string;
   subtitle: string;
   lottieUrl?: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, lottieUrl }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, lottieUrl, actionLabel, onAction }) => {
+  const theme = useTheme();
+  const [lottieError, setLottieError] = useState(false);
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconCircle}>
-        {lottieUrl ? (
+      <View style={[styles.iconCircle, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        {lottieUrl && !lottieError ? (
           <LottieView 
             source={{ uri: lottieUrl }} 
             autoPlay 
             loop 
             style={{ width: 120, height: 120 }} 
+            onAnimationFailure={() => setLottieError(true)}
           />
         ) : (
           <Text style={styles.icon}>{icon}</Text>
         )}
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+      <Text style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</Text>
+      
+      {actionLabel && onAction && (
+        <Pressable 
+          style={[styles.actionBtn, { backgroundColor: theme.primary }]} 
+          onPress={onAction}
+        >
+          <Text style={[styles.actionText, { color: theme.onPrimary }]}>{actionLabel}</Text>
+        </Pressable>
+      )}
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -67,5 +83,15 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  actionBtn: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  actionText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 14,
   },
 });

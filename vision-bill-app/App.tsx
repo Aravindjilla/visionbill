@@ -12,14 +12,18 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@e
 import { Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
 
-import { Colors } from './src/theme/colors';
+import { Colors, useTheme } from './src/theme/colors';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { ScannerScreen } from './src/screens/ScannerScreen';
 import { VerificationScreen } from './src/screens/VerificationScreen';
 import { SplitScreen } from './src/screens/SplitScreen';
-import { GroupsScreen } from './src/screens/GroupsScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { PantryScreen } from './src/screens/PantryScreen';
+import { GroupsScreen } from './src/screens/GroupsScreen';
+import { LoyaltyWalletScreen } from './src/screens/LoyaltyWalletScreen';
+import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
+import { SettlementScreen } from './src/screens/SettlementScreen';
+import { ReceiptHistoryScreen } from './src/screens/ReceiptHistoryScreen';
 
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -99,48 +103,53 @@ const asyncStoragePersister = createAsyncStoragePersister({
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const CustomScanButton = (props: any) => (
-  <Pressable 
-    {...props}
-    style={{
-      top: -24,
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
-  >
-    <View style={{
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: Colors.primary,
-      shadowColor: Colors.primary,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.3,
-      shadowRadius: 10,
-      elevation: 5,
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <Text style={{ fontSize: 32 }}>📸</Text>
-    </View>
-  </Pressable>
-);
+const CustomScanButton = (props: any) => {
+  const theme = useTheme();
+  return (
+    <Pressable 
+      {...props}
+      style={{
+        top: -24,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <View style={{
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: theme.primary,
+        shadowColor: theme.primary,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <Text style={{ fontSize: 32 }}>📸</Text>
+      </View>
+    </Pressable>
+  );
+};
 
-const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: { backgroundColor: Colors.surface, borderTopColor: Colors.border, height: 85, paddingBottom: 25, paddingTop: 10 },
-      tabBarActiveTintColor: Colors.primary,
-      tabBarInactiveTintColor: Colors.textMuted,
-      tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },
-    }}
-    screenListeners={{
-      state: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      },
-    }}
-  >
+const MainTabs = () => {
+  const theme = useTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: theme.surface, borderTopColor: theme.border, height: 85, paddingBottom: 25, paddingTop: 10 },
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textMuted,
+        tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },
+      }}
+      screenListeners={{
+        state: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        },
+      }}
+    >
     <Tab.Screen 
       name="Dashboard" 
       component={DashboardScreen} 
@@ -169,7 +178,8 @@ const MainTabs = () => (
       options={{ tabBarLabel: 'Profile', tabBarIcon: () => <Text>👤</Text> }}
     />
   </Tab.Navigator>
-);
+  );
+};
 
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 
@@ -197,6 +207,9 @@ export default function App() {
 
     // Check Auth via Store
     await initialize();
+
+    // Register push notifications after auth is ready
+    await registerForPushNotificationsAsync();
   };
 
   const handleFinishOnboarding = async () => {
@@ -219,7 +232,7 @@ export default function App() {
     >
       <ErrorBoundary>
         <NavigationContainer>
-          <StatusBar style="light" />
+          <StatusBar style="auto" />
           <Stack.Navigator
             initialRouteName={isAuthenticated ? "Main" : "Login"}
             screenOptions={{
@@ -230,8 +243,11 @@ export default function App() {
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Verification" component={VerificationScreen} />
             <Stack.Screen name="Split" component={SplitScreen} />
-            <Stack.Screen name="Groups" component={GroupsScreen} />
             <Stack.Screen name="Scanner" component={ScannerScreen} />
+            <Stack.Screen name="LoyaltyWallet" component={LoyaltyWalletScreen} />
+            <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+            <Stack.Screen name="Settlement" component={SettlementScreen} />
+            <Stack.Screen name="ReceiptHistory" component={ReceiptHistoryScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </ErrorBoundary>

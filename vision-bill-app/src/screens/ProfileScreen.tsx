@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../theme/colors';
+import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
 
-export const ProfileScreen = () => {
+export const ProfileScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
+  const theme = useTheme();
   const { userId, clearSession, accessToken } = useAuthStore();
   const [mobile, setMobile] = useState('');
   const [upiId, setUpiId] = useState('');
+  const [savingsGoal, setSavingsGoal] = useState('500');
 
   const { data: user, isLoading: loading, refetch } = useQuery({
     queryKey: ['profile', userId],
@@ -29,11 +31,12 @@ export const ProfileScreen = () => {
     if (user) {
       setMobile(user.mobile || '');
       setUpiId(user.upiId || '');
+      setSavingsGoal(String(user.savingsGoal ?? 500));
     }
   }, [user]);
 
   const saveMutation = useMutation({
-    mutationFn: (data: { mobile: string; upiId: string }) => 
+    mutationFn: (data: { mobile: string; upiId: string; savingsGoal: number }) =>
       api.post(`/users/profile/${userId}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', userId] });
@@ -47,7 +50,7 @@ export const ProfileScreen = () => {
 
   const handleSave = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    saveMutation.mutate({ mobile, upiId });
+    saveMutation.mutate({ mobile, upiId, savingsGoal: parseFloat(savingsGoal) || 500 });
   };
 
   const handleLogout = async () => {
@@ -101,28 +104,39 @@ export const ProfileScreen = () => {
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Details</Text>
+        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Payment Details</Text>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Mobile Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
               value={mobile}
               onChangeText={setMobile}
               placeholder="91xxxxxxxxxx"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.textMuted}
               keyboardType="phone-pad"
             />
           </View>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>UPI ID (VPA)</Text>
+            <Text style={[styles.label, { color: theme.textMuted }]}>UPI ID (VPA)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
               value={upiId}
               onChangeText={setUpiId}
               placeholder="username@upi"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={theme.textMuted}
               autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Monthly Savings Goal (₹)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
+              value={savingsGoal}
+              onChangeText={setSavingsGoal}
+              placeholder="500"
+              placeholderTextColor={theme.textMuted}
+              keyboardType="numeric"
             />
           </View>
         </View>
@@ -135,13 +149,20 @@ export const ProfileScreen = () => {
           <Text style={styles.saveButtonText}>{saveMutation.isPending ? 'Saving...' : 'Save Profile'}</Text>
         </Pressable>
 
-        <View style={styles.dangerZone}>
-          <Text style={styles.dangerTitle}>Danger Zone</Text>
+        <Pressable
+          style={styles.subscriptionsBtn}
+          onPress={() => navigation.navigate('Subscriptions')}
+        >
+          <Text style={styles.subscriptionsBtnText}>📅 Manage Subscriptions</Text>
+        </Pressable>
+
+        <View style={[styles.dangerZone, { borderTopColor: theme.border }]}>
+          <Text style={[styles.dangerTitle, { color: theme.error }]}>Danger Zone</Text>
           <Pressable 
-            style={styles.logoutButton} 
+            style={[styles.logoutButton, { backgroundColor: theme.surface, borderColor: theme.border }]} 
             onPress={handleLogout}
           >
-            <Text style={styles.logoutText}>Logout Session</Text>
+            <Text style={[styles.logoutText, { color: theme.text }]}>Logout Session</Text>
           </Pressable>
           <Pressable 
             style={[styles.deleteButton, deleteMutation.isPending && { opacity: 0.5 }]} 
@@ -172,7 +193,9 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: Colors.primary, padding: 16, borderRadius: 16, alignItems: 'center' },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: '#FFF', fontFamily: 'Inter_700Bold', fontSize: 16 },
-  dangerZone: { marginTop: 40, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 24 },
+  subscriptionsBtn: { marginTop: 16, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, padding: 16, alignItems: 'center', backgroundColor: Colors.card },
+  subscriptionsBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: Colors.text },
+  dangerZone: { marginTop: 24, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 24 },
   dangerTitle: { fontSize: 16, fontFamily: 'Outfit_700Bold', color: Colors.error, marginBottom: 16 },
   logoutButton: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, padding: 16, borderRadius: 16, alignItems: 'center', marginBottom: 12 },
   logoutText: { color: Colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 14 },

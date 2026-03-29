@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Linking, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../theme/colors';
+import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
@@ -10,13 +10,14 @@ import { Shimmer } from '../components/Shimmer';
 import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
 
-export const SplitScreen = () => {
-  const { items, toggleParticipantAssignment } = useScanStore();
+export const SplitScreen = ({ navigation }: any) => {
+  const theme = useTheme();
+  const { items, toggleParticipantAssignment, currentScan } = useScanStore();
   const { userId } = useAuthStore();
   const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('equal');
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
 
-  const { data: participants = [], isLoading: loading } = useQuery({
+  const { data: participants = [], isLoading: loading, isError: groupsError } = useQuery({
     queryKey: ['groups-participants'],
     queryFn: async () => {
       const resp = await api.get('/groups');
@@ -82,35 +83,63 @@ export const SplitScreen = () => {
 
   const handleWhatsApp = async (mobile: string, name: string, amount: number) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Find assigned items for this member
     const targetMember = participants.find((p: any) => p.mobile === mobile);
-    const pItems = items.filter((i: any) => 
+    const pItems = items.filter((i: any) =>
       i.assignedParticipants?.some((ap: any) => ap.participantId === targetMember?.id)
     );
 
     const itemLines = pItems.map((i: any) => `• ${i.cleanName}: ₹${i.price}`).join('\n');
-    
-    // Fallback to static if user hasn't set up profile
-    const upiId = userProfile?.upiId || 'aravind@upi'; 
-    const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(userProfile?.name || 'VisionBill')}&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`;
-    
+
+    const upiId = userProfile?.upiId;
+    const upiLine = upiId
+      ? `⚡ *Pay instantly:* upi://pay?pa=${upiId}&pn=${encodeURIComponent(userProfile?.name || 'VisionBill')}&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`
+      : `💡 *Set up your UPI ID in VisionBill Profile to enable one-tap payments*`;
+
     const message = encodeURIComponent(
       `💸 *VisionBill Split Request*\n\n` +
       `Hey ${name}! Here's your share for the recent bill:\n` +
       `💰 *Amount: ₹${amount.toFixed(2)}*\n\n` +
       `${pItems.length > 0 ? `📦 *Items:*\n${itemLines}\n\n` : ''}` +
-      `⚡ *Pay instantly:* ${upiLink}\n\n` +
+      `${upiLine}\n\n` +
       `Sent via VisionBill 🚀`
     );
-    
+
+    // Persist to settlement ledger so balance is tracked across sessions
+    try {
+      await api.post('/split/settlement/record', {
+        participants: [{ name, mobile, amount }],
+        description: `Bill split${currentScan?.storeName ? ` at ${currentScan.storeName}` : ''}`,
+        scanId: currentScan?._id,
+      });
+    } catch {
+      // Non-blocking — WhatsApp message still goes out even if ledger write fails
+    }
+
     Linking.openURL(`whatsapp://send?phone=${mobile}&text=${message}`);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]}>
+      {groupsError && (
+        <View style={[styles.errorBanner, { backgroundColor: theme.glassError, borderBottomColor: theme.error }]}>
+          <Text style={[styles.errorBannerText, { color: theme.error }]}>⚠️ Could not load groups. </Text>
+          <Pressable onPress={() => queryClient.invalidateQueries({ queryKey: ['groups-participants'] })}>
+            <Text style={{ color: theme.primary, fontFamily: 'Inter_700Bold', fontSize: 12 }}>Retry</Text>
+          </Pressable>
+        </View>
+      )}
       <View style={styles.header}>
-        <Text style={styles.title}>Split Bill</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Split Bill</Text>
+          <Pressable
+            style={styles.doneBtn}
+            onPress={() => navigation.navigate('Main', { screen: 'Dashboard' })}
+          >
+            <Text style={styles.doneBtnText}>Done ✓</Text>
+          </Pressable>
+        </View>
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total Amount</Text>
           <Text style={styles.totalValue}>₹{totalAmount.toFixed(2)}</Text>
@@ -241,7 +270,10 @@ export const SplitScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surface },
   header: { padding: Spacing.lg },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontFamily: 'Outfit_700Bold', fontSize: 24, color: Colors.text },
+  doneBtn: { backgroundColor: Colors.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  doneBtnText: { color: '#FFF', fontFamily: 'Inter_700Bold', fontSize: 13 },
   totalCard: { backgroundColor: Colors.primary, padding: 16, borderRadius: 20, marginTop: 16 },
   totalLabel: { fontFamily: 'Inter_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   totalValue: { fontFamily: 'Outfit_700Bold', fontSize: 28, color: '#FFF' },
@@ -285,5 +317,7 @@ const styles = StyleSheet.create({
   ownerBadge: { backgroundColor: Colors.border, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   ownerText: { fontFamily: 'Inter_700Bold', fontSize: 10, color: Colors.textMuted },
   listContent: { paddingBottom: 40 },
+  errorBanner: { backgroundColor: 'rgba(239,68,68,0.12)', paddingHorizontal: Spacing.lg, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(239,68,68,0.2)' },
+  errorBannerText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.error },
 });
 

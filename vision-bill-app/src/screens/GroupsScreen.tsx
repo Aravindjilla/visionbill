@@ -10,7 +10,7 @@ import api from '../utils/api';
 import { ErrorView } from '../components/ErrorView';
 import { EmptyState } from '../components/EmptyState';
 
-export const GroupsScreen = () => {
+export const GroupsScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -89,12 +89,24 @@ export const GroupsScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Frequent Groups</Text>
-        <Pressable 
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.addButtonText}>+ New Group</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable
+            style={[styles.addButton, { backgroundColor: 'rgba(16,185,129,0.1)' }]}
+            onPress={() => {
+              // When rendered inside the Tab navigator, navigate via parent Stack
+              const parent = navigation.getParent();
+              (parent ?? navigation).navigate('Settlement');
+            }}
+          >
+            <Text style={[styles.addButtonText, { color: '#10B981' }]}>⚖️ Balances</Text>
+          </Pressable>
+          <Pressable
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.addButtonText}>+ New Group</Text>
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (

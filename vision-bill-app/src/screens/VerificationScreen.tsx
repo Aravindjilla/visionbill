@@ -1,15 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet, SectionList, Pressable, ScrollView, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, SectionList, Pressable, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../theme/colors';
+import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { ItemCard } from '../components/ItemCard';
 import { Shimmer } from '../components/Shimmer';
 import { useScanStore } from '../store/useScanStore';
+import api from '../utils/api';
 
 export const VerificationScreen = ({ navigation }: any) => {
+  const theme = useTheme();
   const { items, toggleItem, updateItemPrice, loading, loadingMessage, currentScan } = useScanStore();
+  const [saving, setSaving] = useState(false);
   const imageUrl = currentScan?.imageUrl;
 
   const groupedItems = items.reduce((acc: any[], item, index) => {
@@ -42,10 +45,20 @@ export const VerificationScreen = ({ navigation }: any) => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Verify Items</Text>
-        <Text style={styles.subtitle}>{items.length} items found</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View>
+            <Text style={[styles.title, { color: theme.text }]}>Verify Items</Text>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>{items.length} items found</Text>
+          </View>
+          <Pressable 
+            style={[styles.retakeBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => navigation.navigate('Scanner')}
+          >
+            <Text style={[styles.retakeText, { color: theme.text }]}>📸 Retake</Text>
+          </Pressable>
+        </View>
       </View>
 
       <SectionList
@@ -69,6 +82,7 @@ export const VerificationScreen = ({ navigation }: any) => {
             qty={item.qty > 1 ? `${item.qty} pcs` : '1 unit'}
             price={item.price}
             checked={item.checked}
+            isSplit={item.isSplit}
             onToggle={() => toggleItem(item.originalIndex)}
             onPriceChange={(newPrice) => updateItemPrice(item.originalIndex, newPrice)}
           />
@@ -81,14 +95,29 @@ export const VerificationScreen = ({ navigation }: any) => {
       />
 
       <View style={styles.footer}>
-        <Pressable 
-          style={styles.splitButton}
+        <Pressable
+          style={[styles.splitButton, saving && { opacity: 0.6 }]}
+          disabled={saving}
           onPress={async () => {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            // Persist any price edits / toggled items back to the database
+            if (currentScan?._id && currentScan._id !== 'mock-id') {
+              setSaving(true);
+              try {
+                await api.patch(`/scans/${currentScan._id}/items`, { items });
+              } catch {
+                Alert.alert('Save Failed', 'Could not save your edits. Proceeding anyway.');
+              } finally {
+                setSaving(false);
+              }
+            }
             navigation.navigate('Split');
           }}
         >
-          <Text style={styles.splitButtonText}>Split with Friends</Text>
+          {saving
+            ? <ActivityIndicator color="#FFF" />
+            : <Text style={styles.splitButtonText}>Split with Friends</Text>
+          }
         </Pressable>
       </View>
     </SafeAreaView>
@@ -182,5 +211,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFF',
   },
+  retakeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  retakeText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 13,
+  },
 });
-

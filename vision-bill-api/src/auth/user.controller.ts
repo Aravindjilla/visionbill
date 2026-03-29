@@ -16,8 +16,9 @@ export class UserController {
     @Param('id') id: string,
     @Body('mobile') mobile?: string,
     @Body('upiId') upiId?: string,
+    @Body('savingsGoal') savingsGoal?: number,
   ) {
-    return this.userService.updateProfile(id, { mobile, upiId });
+    return this.userService.updateProfile(id, { mobile, upiId, savingsGoal });
   }
 
   @Delete(':id')
