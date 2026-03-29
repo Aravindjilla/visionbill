@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
 import { MotiView, MotiText } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
@@ -13,6 +13,7 @@ interface ItemCardProps {
   imageUrl?: string;
   checked: boolean;
   onToggle: () => void;
+  onPriceChange?: (newPrice: number) => void;
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
@@ -23,7 +24,14 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   imageUrl,
   checked,
   onToggle,
+  onPriceChange,
 }) => {
+  const [internalPrice, setInternalPrice] = React.useState(price.toString());
+  
+  // Keep internal price sync'd if external price changes
+  React.useEffect(() => {
+    setInternalPrice(price.toString());
+  }, [price]);
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle();
@@ -60,7 +68,27 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         </View>
 
         <View style={styles.right}>
-          <Text style={styles.price}>₹{price.toFixed(2)}</Text>
+          {onPriceChange ? (
+            <View style={styles.editPriceContainer}>
+              <Text style={styles.currencySymbol}>₹</Text>
+              <TextInput
+                style={styles.priceInput}
+                value={internalPrice}
+                onChangeText={setInternalPrice}
+                keyboardType="decimal-pad"
+                onEndEditing={(e) => {
+                  const parsed = parseFloat(e.nativeEvent.text);
+                  if (!isNaN(parsed) && onPriceChange) {
+                    onPriceChange(parsed);
+                  } else {
+                    setInternalPrice(price.toString());
+                  }
+                }}
+              />
+            </View>
+          ) : (
+            <Text style={styles.price}>₹{price.toFixed(2)}</Text>
+          )}
           {savings && (
             <View style={styles.savingsBadge}>
               <Text style={styles.savingsText}>Save ₹{savings.toFixed(2)}</Text>
@@ -144,6 +172,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     fontSize: 16,
     color: Colors.text,
+  },
+  editPriceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  currencySymbol: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 14,
+    color: Colors.textMuted,
+    marginRight: 2,
+  },
+  priceInput: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 16,
+    color: Colors.text,
+    minWidth: 40,
+    textAlign: 'right',
   },
   savingsBadge: {
     backgroundColor: 'rgba(0, 200, 83, 0.1)',

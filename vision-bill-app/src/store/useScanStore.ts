@@ -13,6 +13,7 @@ interface ScanState {
   setScan: (scan: Scan) => void;
   toggleItem: (index: number) => void;
   toggleParticipantAssignment: (itemIndex: number, participantId: string) => void;
+  updateItemPrice: (index: number, newPrice: number) => void;
   addImage: (image: any) => void;
   clearImages: () => void;
   setLoading: (loading: boolean, message?: string) => void;
@@ -66,6 +67,15 @@ export const useScanStore = create<ScanState>()(
 
         newItems[itemIndex] = item;
         return { items: newItems };
+      }),
+      updateItemPrice: (index, newPrice) => set((state) => {
+        const newItems = [...state.items];
+        newItems[index] = { ...newItems[index], price: newPrice };
+        const newTotal = newItems.reduce((acc, item) => acc + item.price, 0);
+        return { 
+          items: newItems,
+          currentScan: state.currentScan ? { ...state.currentScan, extractedTotal: newTotal } : null
+        };
       }),
       addImage: (image: any) => set((state) => ({ currentImages: [...state.currentImages, image] })),
       clearImages: () => set({ currentImages: [] }),

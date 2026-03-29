@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, ViewStyle, Image, ScrollView, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -46,13 +47,21 @@ export const ScannerScreen = ({ navigation }: any) => {
     setLoading(true, 'Processing receipt with Gemini AI...');
     try {
       const formData = new FormData();
-      photos.forEach((photo, index) => {
+      
+      for (let i = 0; i < photos.length; i++) {
+        // Optimize image locally before hitting server
+        const manipulated = await ImageManipulator.manipulateAsync(
+          photos[i].uri,
+          [{ resize: { width: 1080 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+
         formData.append('images', {
-          uri: photo.uri,
-          name: `segment_${index}.jpg`,
+          uri: manipulated.uri,
+          name: `segment_${i}.jpg`,
           type: 'image/jpeg',
         } as any);
-      });
+      }
 
       const response = await api.post<ScanResponse>('/scans/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

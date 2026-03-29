@@ -9,7 +9,7 @@ import { Shimmer } from '../components/Shimmer';
 import { useScanStore } from '../store/useScanStore';
 
 export const VerificationScreen = ({ navigation }: any) => {
-  const { items, toggleItem, loading, loadingMessage, currentScan } = useScanStore();
+  const { items, toggleItem, updateItemPrice, loading, loadingMessage, currentScan } = useScanStore();
   const imageUrl = currentScan?.imageUrl;
 
   const groupedItems = items.reduce((acc: any[], item, index) => {
@@ -70,6 +70,7 @@ export const VerificationScreen = ({ navigation }: any) => {
             price={item.price}
             checked={item.checked}
             onToggle={() => toggleItem(item.originalIndex)}
+            onPriceChange={(newPrice) => updateItemPrice(item.originalIndex, newPrice)}
           />
         )}
         renderSectionHeader={({ section: { title } }) => (
