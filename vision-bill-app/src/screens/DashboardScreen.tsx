@@ -12,6 +12,8 @@ const { width } = Dimensions.get('window');
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 
+import { EmptyState } from '../components/EmptyState';
+
 export const DashboardScreen = () => {
   const queryClient = useQueryClient();
 
@@ -140,26 +142,31 @@ export const DashboardScreen = () => {
           <View style={{ paddingHorizontal: Spacing.lg }}>
             <Shimmer width={width - 40} height={80} borderRadius={16} style={{ marginBottom: 12 }} />
             <Shimmer width={width - 40} height={80} borderRadius={16} style={{ marginBottom: 12 }} />
-            <Shimmer width={width - 40} height={80} borderRadius={16} style={{ marginBottom: 12 }} />
           </View>
-        ) : (
-          recentReceipts.map(r => (
+        ) : recentReceipts.length > 0 ? (
+          recentReceipts.map((r: any) => (
             <Pressable key={r._id} style={styles.receiptCard}>
               <View style={styles.receiptIcon}>
-                <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🍔'}</Text>
+                <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
               </View>
               <View style={styles.receiptMain}>
-                <Text style={styles.storeName}>{r.store || (r.billType?.charAt(0).toUpperCase() + r.billType?.slice(1))}</Text>
-                <Text style={styles.receiptMeta}>{new Date(r.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} • {r.items?.length || 0} items</Text>
+                <Text style={styles.storeName}>{r.storeName || 'New Scan'}</Text>
+                <Text style={styles.receiptMeta}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
               </View>
               <View style={styles.receiptRight}>
-                <Text style={styles.receiptAmount}>₹{r.extractedTotal || 0}</Text>
+                <Text style={styles.receiptAmount}>₹{r.extractedTotal?.toFixed(2) || '0.00'}</Text>
                 <Text style={[styles.statusBadge, { color: r.status === 'completed' ? Colors.success : Colors.error }]}>
-                  {r.status === 'completed' ? '✓' : '!'}
+                  {r.status === 'completed' ? '✓' : '⏳'}
                 </Text>
               </View>
             </Pressable>
           ))
+        ) : (
+          <EmptyState 
+            icon="🧾" 
+            title="No receipts yet" 
+            subtitle="Scan your first bill to see spending insights and track your items." 
+          />
         )}
 
         <View style={styles.banner}>

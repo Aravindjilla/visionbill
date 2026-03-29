@@ -8,6 +8,8 @@ import { Shimmer } from '../components/Shimmer';
 import axios from 'axios';
 import { ErrorView } from '../components/ErrorView';
 
+import { EmptyState } from '../components/EmptyState';
+
 export const GroupsScreen = () => {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export const GroupsScreen = () => {
             <Shimmer key={i} width={'100%'} height={72} style={{ marginBottom: 12, borderRadius: 16 }} />
           ))}
         </View>
-      ) : (
+      ) : groups.length > 0 ? (
         <FlatList
           data={groups}
           keyExtractor={(item) => item._id}
@@ -124,6 +126,12 @@ export const GroupsScreen = () => {
             </Pressable>
           )}
           contentContainerStyle={styles.listContent}
+        />
+      ) : (
+        <EmptyState 
+          icon="👥" 
+          title="No frequent groups" 
+          subtitle="Create groups for your roommates or family to split bills in seconds." 
         />
       )}
 

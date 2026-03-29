@@ -51,8 +51,10 @@ export const ScannerScreen = ({ navigation }: any) => {
 
       setScan(response.data.scan);
       clearImages();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate('Verification');
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.error('Scan failed', error);
       // Mock Fallback
       setScan({

@@ -1,5 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, UIManager } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -22,7 +26,10 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import * as Haptics from 'expo-haptics';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -72,15 +79,16 @@ const CustomScanButton = (props: any) => (
 const MainTabs = () => (
   <Tab.Navigator
     screenOptions={{
-      tabBarStyle: {
-        backgroundColor: Colors.surface,
-        borderTopColor: Colors.border,
-        height: 64,
-        paddingBottom: 8,
-      },
+      headerShown: false,
+      tabBarStyle: { backgroundColor: Colors.surface, borderTopColor: Colors.border, height: 85, paddingBottom: 25, paddingTop: 10 },
       tabBarActiveTintColor: Colors.primary,
       tabBarInactiveTintColor: Colors.textMuted,
-      headerShown: false,
+      tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },
+    }}
+    screenListeners={{
+      state: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      },
     }}
   >
     <Tab.Screen 
@@ -135,22 +143,23 @@ export default function App() {
       client={queryClient}
       persistOptions={{ persister: asyncStoragePersister }}
     >
-      <NavigationContainer>
-        <StatusBar style="light" />
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            cardStyle: { backgroundColor: Colors.surface },
-          }}
-        >
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="Verification" component={VerificationScreen} />
-          <Stack.Screen name="Split" component={SplitScreen} />
-          <Stack.Screen name="Groups" component={GroupsScreen} />
-          <Stack.Screen name="Scanner" component={ScannerScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <ErrorBoundary>
+        <NavigationContainer>
+          <StatusBar style="light" />
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Verification" component={VerificationScreen} />
+            <Stack.Screen name="Split" component={SplitScreen} />
+            <Stack.Screen name="Groups" component={GroupsScreen} />
+            <Stack.Screen name="Scanner" component={ScannerScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ErrorBoundary>
     </PersistQueryClientProvider>
   );
 }

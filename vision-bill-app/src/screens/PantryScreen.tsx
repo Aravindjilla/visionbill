@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, RefreshControl, LayoutAnimation } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -7,6 +7,8 @@ import { Shimmer } from '../components/Shimmer';
 import { ErrorView } from '../components/ErrorView';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
+
+import { EmptyState } from '../components/EmptyState';
 
 export const PantryScreen = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -60,7 +62,7 @@ export const PantryScreen = () => {
             <Shimmer key={i} width={'100%'} height={82} style={{ marginBottom: 12, borderRadius: 16 }} />
           ))}
         </View>
-      ) : (
+      ) : pantryItems.length > 0 ? (
         <FlatList
           data={pantryItems}
           keyExtractor={item => item._id}
@@ -72,7 +74,10 @@ export const PantryScreen = () => {
             return (
               <Pressable 
                 style={[styles.itemCard, selectedItem?._id === item._id && styles.itemCardActive]}
-                onPress={() => setSelectedItem(item)}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setSelectedItem(item);
+                }}
               >
                 <View style={styles.itemMain}>
                   <View style={styles.itemIcon}><Text>{item.category === 'Veggies' ? '🍅' : (item.category === 'Dairy' ? '🥛' : '📦')}</Text></View>
@@ -94,6 +99,12 @@ export const PantryScreen = () => {
             );
           }}
           contentContainerStyle={styles.listContent}
+        />
+      ) : (
+        <EmptyState 
+          icon="📦" 
+          title="Digital Pantry is empty" 
+          subtitle="All items from your scanned receipts will automatically appear here to track price hikes." 
         />
       )}
 
