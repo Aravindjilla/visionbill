@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, RefreshControl, LayoutAnimation } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, RefreshControl, LayoutAnimation, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -8,6 +8,9 @@ import { ErrorView } from '../components/ErrorView';
 import { useQuery } from '@tanstack/react-query';
 import api from '../utils/api';
 
+const { width } = Dimensions.get('window');
+
+import { LineChart } from 'react-native-chart-kit';
 import { EmptyState } from '../components/EmptyState';
 
 export const PantryScreen = () => {
@@ -111,13 +114,41 @@ export const PantryScreen = () => {
 
       {selectedItem && (
         <View style={styles.detailDrawer}>
-          <Text style={styles.detailTitle}>{selectedItem.cleanName} Price Trend</Text>
+          <View style={styles.drawerHeader}>
+            <Text style={styles.detailTitle}>{selectedItem.cleanName}</Text>
+            <Pressable onPress={() => setSelectedItem(null)}><Text style={styles.closeBtn}>✕</Text></Pressable>
+          </View>
+          
+          <Text style={styles.chartTitle}>Price History (Trend)</Text>
           <View style={styles.chartWrapper}>
-             <View style={styles.miniChart}>
-                {selectedItem.priceHistory?.map((h: any, i: number) => (
-                  <View key={i} style={[styles.miniBar, { height: (h.price / selectedItem.currentPrice) * 80 }]} />
-                ))}
-             </View>
+             {selectedItem.priceHistory?.length > 1 ? (
+               <LineChart
+                 data={{
+                   labels: selectedItem.priceHistory.slice(-5).map((h: any) => new Date(h.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })),
+                   datasets: [{ data: selectedItem.priceHistory.slice(-5).map((h: any) => Number(h.price)) }]
+                 }}
+                 width={width - 48}
+                 height={140}
+                 chartConfig={{
+                   backgroundColor: Colors.card,
+                   backgroundGradientFrom: Colors.card,
+                   backgroundGradientTo: Colors.card,
+                   decimalPlaces: 0,
+                   color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+                   labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                   style: { borderRadius: 16 },
+                   propsForDots: { r: "4", strokeWidth: "2", stroke: Colors.primary }
+                 }}
+                 bezier
+                 style={{ marginVertical: 8, borderRadius: 16 }}
+                 withInnerLines={false}
+                 withOuterLines={false}
+                 withVerticalLines={false}
+                 withHorizontalLines={false}
+               />
+             ) : (
+               <View style={styles.noHistory}><Text style={styles.noHistoryText}>Scan more bills to see trends!</Text></View>
+             )}
           </View>
           <View style={styles.bestPriceRow}>
             <View style={styles.bestPriceCard}>
@@ -158,6 +189,11 @@ const styles = StyleSheet.create({
   chartWrapper: { height: 100, justifyContent: 'center', marginBottom: 20 },
   miniChart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 80 },
   miniBar: { width: 30, backgroundColor: Colors.info, borderRadius: 4 },
+  noHistory: { height: 140, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.border },
+  noHistoryText: { fontFamily: 'Inter_400Regular', fontSize: 13, color: Colors.textMuted },
+  drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  closeBtn: { fontSize: 20, color: Colors.textMuted, padding: 4 },
+  chartTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.textMuted, marginBottom: 8 },
   bestPriceRow: { flexDirection: 'row', justifyContent: 'space-between' },
   bestPriceCard: { flex: 1, padding: 16, borderRadius: 16, backgroundColor: Colors.surface, marginRight: 8, alignItems: 'center' },
   bestLabel: { fontFamily: 'Inter_400Regular', fontSize: 10, color: Colors.textMuted },

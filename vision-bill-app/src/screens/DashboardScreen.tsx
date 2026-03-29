@@ -11,6 +11,7 @@ const { width } = Dimensions.get('window');
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
+import { ProgressChart } from 'react-native-chart-kit';
 
 import { EmptyState } from '../components/EmptyState';
 import { ExportService } from '../utils/export';
@@ -151,6 +152,31 @@ export const DashboardScreen = () => {
           </View>
         )}
 
+        {/* Savings Progress Card */}
+        {!loading && (
+          <View style={styles.savingsCard}>
+            <View style={styles.savingsInfo}>
+              <Text style={styles.savingsTitle}>Total Savings This Month</Text>
+              <Text style={styles.savingsAmount}>₹{data?.stats?.find((s: any) => s.label === 'Saved')?.value.replace('₹', '') || 0}</Text>
+              <Text style={styles.savingsGoalText}>Goal: ₹500</Text>
+            </View>
+            <ProgressChart
+              data={{ data: [Math.min(parseFloat(data?.stats?.find((s: any) => s.label === 'Saved')?.value.replace('₹', '') || '0') / 500, 1)] }}
+              width={100}
+              height={100}
+              strokeWidth={8}
+              radius={32}
+              chartConfig={{
+                backgroundColor: Colors.card,
+                backgroundGradientFrom: Colors.card,
+                backgroundGradientTo: Colors.card,
+                color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+              }}
+              hideLegend
+            />
+          </View>
+        )}
+
         {/* Recent Receipts Section */}
         <View style={styles.sectionHeader}>
           <View>
@@ -256,5 +282,10 @@ const styles = StyleSheet.create({
   exportActions: { flexDirection: 'row', marginTop: 8 },
   exportBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
   exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: Colors.text },
+  savingsCard: { marginHorizontal: Spacing.lg, backgroundColor: Colors.card, borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderWidth: 1, borderColor: Colors.border },
+  savingsInfo: { flex: 1 },
+  savingsTitle: { fontFamily: 'Inter_400Regular', fontSize: 12, color: Colors.textMuted },
+  savingsAmount: { fontFamily: 'Outfit_700Bold', fontSize: 24, color: Colors.success, marginTop: 4 },
+  savingsGoalText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.text, marginTop: 8 },
 });
 
