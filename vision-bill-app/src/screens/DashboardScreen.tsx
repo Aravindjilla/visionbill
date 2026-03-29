@@ -15,6 +15,7 @@ import api from '../utils/api';
 import { ProgressChart } from 'react-native-chart-kit';
 import { AnimatePresence, MotiView, MotiText } from 'moti';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 
 import { EmptyState } from '../components/EmptyState';
 import { ExportService } from '../utils/export';
@@ -33,6 +34,24 @@ export const DashboardScreen = ({ navigation }: any) => {
   const [offline, setOffline] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [paywallReason, setPaywallReason] = useState<'limit' | 'manual'>('manual');
+
+  const pickImageGallery = async () => {
+    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+      setPaywallReason('limit');
+      setPaywallVisible(true);
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      // Navigate to Scanner with the image to reuse its processing logic
+      navigation.navigate('Scanner', { imageFromGallery: result.assets[0] });
+    }
+  };
 
   const handleExportCSV = async (receipts: any[]) => {
     const exportData = receipts.map(r => ({
@@ -229,6 +248,22 @@ export const DashboardScreen = ({ navigation }: any) => {
               </GlassCard>
             ))
           )}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <Pressable 
+            style={[styles.actionBtn, { backgroundColor: theme.primary }]}
+            onPress={() => navigation.navigate('Scanner')}
+          >
+            <Text style={[styles.actionBtnText, { color: theme.onPrimary }]}>📸 Scan Now</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.actionBtn, { backgroundColor: theme.surfaceLight, borderColor: theme.border, borderWidth: 1 }]}
+            onPress={pickImageGallery}
+          >
+            <Text style={[styles.actionBtnText, { color: theme.text }]}>🖼️ Upload Bill</Text>
+          </Pressable>
         </View>
 
         {/* Insight Card: Trend */}
@@ -478,4 +513,7 @@ const styles = StyleSheet.create({
   undoBtnText: { color: '#FFF', fontFamily: 'Inter_800ExtraBold', fontSize: 12 },
   offlineBar: { position: 'absolute', top: 0, left: 0, right: 0, padding: 4, alignItems: 'center' },
   offlineText: { color: '#FFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  quickActions: { flexDirection: 'row', paddingHorizontal: Spacing.lg, marginBottom: 24, gap: 12 },
+  actionBtn: { flex: 1, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  actionBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold' },
 });

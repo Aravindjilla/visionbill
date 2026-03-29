@@ -13,9 +13,10 @@ import { ScanResponse } from '../types';
 import axios from 'axios';
 import api from '../utils/api';
 
+import * as ImagePicker from 'expo-image-picker';
 import LottieView from 'lottie-react-native';
 
-export const ScannerScreen = ({ navigation }: any) => {
+export const ScannerScreen = ({ navigation, route }: any) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState<any>(null);
   const { addImage, currentImages, clearImages, setScan, setLoading, setError, loading, loadingMessage, error } = useScanStore();
@@ -23,6 +24,12 @@ export const ScannerScreen = ({ navigation }: any) => {
   
   const [isLongBill, setIsLongBill] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.imageFromGallery) {
+      processScan([route.params.imageFromGallery]);
+    }
+  }, [route.params?.imageFromGallery]);
 
   useEffect(() => {
     if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
@@ -112,6 +119,28 @@ export const ScannerScreen = ({ navigation }: any) => {
   const finalizeLongBill = () => {
     if (currentImages.length > 0) {
       processScan(currentImages);
+    }
+  };
+
+  const pickImage = async () => {
+    // Audit check: Ensure scan limits are respected
+    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+      setPaywallVisible(true);
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: isLongBill,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      if (isLongBill) {
+        result.assets.forEach(asset => addImage(asset));
+      } else {
+        processScan([result.assets[0]]);
+      }
     }
   };
 
@@ -208,6 +237,10 @@ export const ScannerScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <View style={styles.controls}>
+              <Pressable onPress={pickImage} style={styles.galleryButton}>
+                <Text style={styles.galleryIcon}>🖼️</Text>
+              </Pressable>
+
               <Pressable 
                 disabled={loading}
                 onPress={takePicture}
@@ -219,10 +252,12 @@ export const ScannerScreen = ({ navigation }: any) => {
                 {loading ? <ActivityIndicator color="#FFF" /> : <View style={styles.captureInner} />}
               </Pressable>
 
-              {isLongBill && currentImages.length > 0 && (
+              {isLongBill && currentImages.length > 0 ? (
                 <Pressable onPress={finalizeLongBill} style={styles.finishButton}>
                   <Text style={styles.finishButtonText}>Finish ({currentImages.length})</Text>
                 </Pressable>
+              ) : (
+                <View style={{ width: 80 }} /> // Spacer to keep capture button centered
               )}
             </View>
           </View>
@@ -259,6 +294,8 @@ const styles = StyleSheet.create({
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
   captureButton: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.text },
+  galleryButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', position: 'absolute', left: 40 },
+  galleryIcon: { fontSize: 24 },
   finishButton: { position: 'absolute', right: 40, backgroundColor: Colors.success, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   finishButtonText: { ...Typography.bodyBold, color: Colors.onPrimary },
   errorBanner: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 200, backgroundColor: 'rgba(239,68,68,0.92)', padding: 12, alignItems: 'center' },
