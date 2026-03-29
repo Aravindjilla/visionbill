@@ -1,27 +1,50 @@
-import { Controller, Post, Patch, UseInterceptors, UploadedFiles, Req, Get, Param, UseGuards, Body, UploadedFile, Delete, Query } from '@nestjs/common';
+import { Controller, Post, Patch, UseInterceptors, UploadedFiles, Req, Get, Param, UseGuards, Body, UploadedFile, Delete, Query, BadRequestException } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { ScansService } from './scans.service';
+import { BillItemDto, UpdateItemsDto } from '../common-types';
+import type { AuthenticatedRequest, ScanResponseDto, ScansListResponseDto } from '../common-types';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { ScanDocument } from './schemas/scan.schema';
+import type { ScanSessionDocument } from './schemas/scan-session.schema';
+import type { Express } from 'express';
 
+
+const MULTER_UPLOAD_LIMITS = { fileSize: 10 * 1024 * 1024 }; // 10MB
+const IMAGE_FILE_FILTER = (req: any, file: any, callback: any) => {
+  if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+    return callback(new BadRequestException('Only image files (JPG, PNG) are allowed!'), false);
+  }
+  callback(null, true);
+};
+
+const PDF_FILE_FILTER = (req: any, file: any, callback: any) => {
+  if (file.mimetype !== 'application/pdf') {
+    return callback(new BadRequestException('Only PDF files are allowed!'), false);
+  }
+  callback(null, true);
+};
 
 @Controller('scans')
+@UseGuards(JwtAuthGuard)
 export class ScansController {
   constructor(private scansService: ScansService) {}
 
   @Post('demo-seed')
-  async demoSeed(@Req() req: any) {
-    const userId = req.user?.sub || 'demo-user-id';
-    return this.scansService.demoSeed(userId);
+  async demoSeed(@Req() req: AuthenticatedRequest) {
+    return this.scansService.demoSeed(req.user.sub);
   }
 
   @Post('session/init')
-  async initSession(@Req() req: any) {
-    const userId = req.user?.sub || 'demo-user-id';
-    return this.scansService.createSession(userId);
+  async initSession(@Req() req: AuthenticatedRequest) {
+    return this.scansService.createSession(req.user.sub);
   }
 
   @Post('session/:id/segment')
-  @UseInterceptors(FileInterceptor('image'))
-  async uploadSegment(@Param('id') sessionId: string, @UploadedFile() file: any) {
+  @UseInterceptors(FileInterceptor('image', {
+    limits: MULTER_UPLOAD_LIMITS,
+    fileFilter: IMAGE_FILE_FILTER,
+  }))
+  async uploadSegment(@Param('id') sessionId: string, @UploadedFile() file: Express.Multer.File) {
     return this.scansService.addSegmentToSession(sessionId, file.path);
   }
 
@@ -31,23 +54,21 @@ export class ScansController {
   }
 
   @Post('upload')
-  @UseInterceptors(FilesInterceptor('images', 10))
-  async uploadScan(@UploadedFiles() files: any[], @Req() req: any) {
-    const userId = req.user?.sub;
-    if (!userId) {
-      throw new Error('Unauthorized');
-    }
-    return this.scansService.createScan(userId, files);
+  @UseInterceptors(FilesInterceptor('images', 10, {
+    limits: MULTER_UPLOAD_LIMITS,
+    fileFilter: IMAGE_FILE_FILTER,
+  }))
+  async uploadScan(@UploadedFiles() files: Express.Multer.File[], @Req() req: AuthenticatedRequest) {
+    return this.scansService.createScan(req.user.sub, files);
   }
 
   @Post('upload-pdf')
-  @UseInterceptors(FileInterceptor('pdf'))
-  async uploadPdf(@UploadedFile() file: any, @Req() req: any) {
-    const userId = req.user?.sub;
-    if (!userId) {
-      throw new Error('Unauthorized');
-    }
-    return this.scansService.processPdfScan(userId, file);
+  @UseInterceptors(FileInterceptor('pdf', {
+    limits: MULTER_UPLOAD_LIMITS,
+    fileFilter: PDF_FILE_FILTER,
+  }))
+  async uploadPdf(@UploadedFile() file: Express.Multer.File, @Req() req: AuthenticatedRequest) {
+    return this.scansService.processPdfScan(req.user.sub, file);
   }
 
   @Get()
@@ -63,7 +84,7 @@ export class ScansController {
   }
 
   @Patch(':id/items')
-  async updateItems(@Param('id') id: string, @Body() body: { items: any[] }) {
+  async updateItems(@Param('id') id: string, @Body() body: UpdateItemsDto) {
     return this.scansService.updateItems(id, body.items);
   }
 

@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as path from 'path';
 import * as fs from 'fs';
-const pdf = require('pdf-img-convert');
+// @ts-ignore
+import * as pdf from 'pdf-img-convert';
 
 import { Scan, ScanDocument, ScanStatus } from './schemas/scan.schema';
 import { OcrService } from './services/ocr.service';
@@ -20,8 +21,13 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { User, UserDocument } from '../auth/schemas/user.schema';
 
+import { SCAN_LIMITS, PDF_CONFIG } from '../common/constants';
+import { ScanResponseDto } from '../common-types';
+
 @Injectable()
 export class ScansService {
+  private readonly logger = new Logger(ScansService.name);
+
   constructor(
     @InjectModel(Scan.name) private scanModel: Model<ScanDocument>,
     @InjectModel(ScanSession.name) private sessionModel: Model<ScanSessionDocument>,
@@ -36,39 +42,46 @@ export class ScansService {
     @InjectQueue('scan-queue') private scanQueue: Queue,
   ) {}
 
-  async createSession(userId: string) {
+  async createSession(userId: string): Promise<ScanSessionDocument> {
     return this.sessionModel.create({ userId });
   }
 
-  async addSegmentToSession(sessionId: string, filePath: string) {
-    return this.sessionModel.findByIdAndUpdate(
+  async addSegmentToSession(sessionId: string, filePath: string): Promise<ScanSessionDocument> {
+    return (await this.sessionModel.findByIdAndUpdate(
       sessionId,
       { $push: { segmentPaths: filePath } },
       { new: true }
-    );
+    ))!;
   }
 
-  async finalizeSession(sessionId: string) {
+  async finalizeSession(sessionId: string): Promise<ScanResponseDto> {
     const session = await this.sessionModel.findById(sessionId);
-    if (!session || session.isFinalized) throw new Error('Invalid session');
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.isFinalized) throw new BadRequestException('Session already finalized');
     
-    const result = await this.createScan(session.userId, session.segmentPaths.map(p => ({ path: p })));
+    const files = session.segmentPaths.map(p => ({ path: p } as Express.Multer.File));
+    const result = await this.createScan(session.userId, files);
     session.isFinalized = true;
     await session.save();
     return result;
   }
 
-  async createScan(userId: string, files: any[]) {
-    // 0. Tier & Limit Check
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new BadRequestException('User not found');
-    
-    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= 5) {
-      throw new BadRequestException('Monthly scan limit reached for Free tier. Please upgrade to Pro.');
+  private async checkAndResetUsage(user: any): Promise<any> {
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    if (user.lastResetMonth !== currentMonth) {
+      user.monthlyScanCount = 0;
+      user.lastResetMonth = currentMonth;
+      return user.save();
     }
+    return user;
+  }
 
+  /**
+   * Internal helper to handle the heavy lifting of scan processing
+   */
+  private async _enqueueScan(userId: string, imagePaths: string[]): Promise<ScanDocument> {
     // 1. Image Stitching
-    const stitchedPath = await this.stitchingService.stitchImages(files.map((f: any) => f.path || 'placeholder-url'));
+    const stitchedPath = await this.stitchingService.stitchImages(imagePaths);
 
     // 2. Upload to Cloud Storage
     const cloudUrl = await this.storageService.uploadImage(stitchedPath);
@@ -86,78 +99,83 @@ export class ScansService {
       userId,
     });
 
-    // 5. Increment usage
+    // 5. Increment usage count
     await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
 
-    return { scan, status: 'Background processing started' };
+    return scan;
   }
 
-  async processPdfScan(userId: string, file: any) {
-    // 0. Tier & Limit Check
-    const user = await this.userModel.findById(userId);
+  async createScan(userId: string, files: Express.Multer.File[]): Promise<ScanResponseDto> {
+    let user: any = await this.userModel.findById(userId);
     if (!user) throw new BadRequestException('User not found');
     
-    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= 5) {
-      throw new BadRequestException('Monthly scan limit reached for Free tier. Please upgrade to Pro.');
+    user = await this.checkAndResetUsage(user!);
+
+    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= SCAN_LIMITS.FREE_TIER_MONTHLY_LIMIT) {
+      throw new BadRequestException(`Monthly scan limit reached for Free tier (${SCAN_LIMITS.FREE_TIER_MONTHLY_LIMIT}). Please upgrade to Pro.`);
     }
 
-    // 1. Convert PDF to Images
-    // pdf-img-convert converts each page to a base64 string or buffer
-    const pageImages = await pdf.convert(file.path, {
-      width: 1080,
-      format: 'jpeg',
-    });
+    const scan = await this._enqueueScan(userId, files.map(f => f.path || 'placeholder'));
+    return { scan, status: 'Processing started' };
+  }
 
-    // 2. Upload individual pages to local storage to get paths for stitching
+  async processPdfScan(userId: string, file: Express.Multer.File): Promise<ScanResponseDto> {
+    let user: any = await this.userModel.findById(userId);
+    if (!user) throw new BadRequestException('User not found');
+    
+    user = await this.checkAndResetUsage(user!);
+
+    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= SCAN_LIMITS.FREE_TIER_MONTHLY_LIMIT) {
+      throw new BadRequestException(`Monthly scan limit reached for Free tier (${SCAN_LIMITS.FREE_TIER_MONTHLY_LIMIT}). Please upgrade to Pro.`);
+    }
+
     const segmentPaths: string[] = [];
-    const tempDir = path.join(process.cwd(), 'uploads', 'temp_pdf');
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    try {
+      // 1. Convert PDF to Images
+      const pageImages = await pdf.convert(file.path, {
+        width: PDF_CONFIG.PAGE_WIDTH,
+        format: 'jpeg',
+      });
 
-    for (let i = 0; i < pageImages.length; i++) {
-      const pagePath = path.join(tempDir, `pdf_${Date.now()}_${i}.jpg`);
-      fs.writeFileSync(pagePath, pageImages[i]);
-      segmentPaths.push(pagePath);
+      const tempDir = path.join(process.cwd(), PDF_CONFIG.TEMP_DIR);
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+      for (let i = 0; i < pageImages.length; i++) {
+        const pagePath = path.join(tempDir, `pdf_${Date.now()}_${i}.jpg`);
+        await fs.promises.writeFile(pagePath, pageImages[i]);
+        segmentPaths.push(pagePath);
+      }
+
+      const scan = await this._enqueueScan(userId, segmentPaths);
+      return { scan, status: 'PDF processing started' };
+    } catch (error) {
+      this.logger.error(`PDF conversion failed for user ${userId}:`, error.stack);
+      throw error;
+    } finally {
+      // Guaranteed cleanup of temp files
+      segmentPaths.forEach(p => { 
+        if (fs.existsSync(p)) fs.unlink(p, (err) => {
+          if (err) this.logger.error(`Failed to cleanup temp PDF page: ${p}`, err);
+        }); 
+      });
     }
-
-    // 3. Reuse stitching and upload logic
-    const stitchedPath = await this.stitchingService.stitchImages(segmentPaths);
-    const cloudUrl = await this.storageService.uploadImage(stitchedPath);
-
-    // 4. Initial Scan Creation (Status: PROCESSING)
-    const scan = await this.scanModel.create({
-      userId,
-      imageUrl: cloudUrl,
-      status: ScanStatus.PROCESSING,
-    });
-
-    // 5. Offload to Background Queue
-    await this.scanQueue.add('process-scan', {
-      scanId: scan._id,
-      userId,
-    });
-
-    // 6. Increment usage
-    await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
-
-    // Cleanup temp files
-    segmentPaths.forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
-
-    return { scan, status: 'PDF processing started' };
   }
 
-  async findById(id: string) {
-    return this.scanModel.findById(id).exec();
+  async findById(id: string): Promise<ScanDocument> {
+    const scan = await this.scanModel.findById(id).exec();
+    if (!scan) throw new Error('Scan not found');
+    return scan;
   }
 
-  async remove(id: string) {
-    return this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.DELETED }).exec();
+  async remove(id: string): Promise<ScanDocument> {
+    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.DELETED }))!;
   }
 
-  async restore(id: string) {
-    return this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.COMPLETED }).exec();
+  async restore(id: string): Promise<ScanDocument> {
+    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.COMPLETED }))!;
   }
 
-  async findAll(userId: string, limit?: number, page = 1) {
+  async findAll(userId: string, limit?: number, page = 1): Promise<ScanDocument[]> {
     const query = this.scanModel.find({ userId, status: { $ne: ScanStatus.DELETED } }).sort({ createdAt: -1 });
     if (limit) {
       query.skip((page - 1) * limit).limit(limit);
@@ -165,18 +183,17 @@ export class ScansService {
     return query.exec();
   }
 
-  async updateItems(id: string, items: any[]) {
+  async updateItems(id: string, items: any[]): Promise<ScanDocument> {
     const total = items.reduce((acc, item) => acc + (item.price || 0), 0);
-    return this.scanModel
+    return (await this.scanModel
       .findByIdAndUpdate(
         id,
         { $set: { items, extractedTotal: parseFloat(total.toFixed(2)) } },
         { new: true },
-      )
-      .exec();
+      ))!;
   }
 
-  async demoSeed(userId: string) {
+  async demoSeed(userId: string): Promise<ScanDocument> {
     const demoItems = [
       { shorthand: 'ORG_TMT_1KG', cleanName: 'Organic Tomatoes', qty: 1, price: 150.00, category: 'Veggies', unit: '1kg' },
       { shorthand: 'MILK_FT_1L', cleanName: 'Fresh Whole Milk', qty: 1, price: 65.00, category: 'Dairy', unit: '1l' },
@@ -185,8 +202,7 @@ export class ScansService {
 
     const scan = await this.scanModel.create({
       userId,
-      storeName: 'VisionBazaar Demo Store',
-      merchantName: 'VisionBazaar Private Limited',
+      merchantName: 'VisionBazaar Demo Store',
       merchantAddress: '123 Tech Park, Bengaluru, KA',
       billType: 'grocery',
       items: demoItems,

@@ -17,7 +17,7 @@ export enum BillType {
   RESTAURANT = 'restaurant',
 }
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, indexes: [{ userId: 1, status: 1, createdAt: -1 }] })
 export class Scan {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, index: true })
   userId: string;
@@ -27,9 +27,6 @@ export class Scan {
 
   @Prop()
   rawText?: string;
-
-  @Prop()
-  storeName?: string;
 
   @Prop()
   merchantName?: string;

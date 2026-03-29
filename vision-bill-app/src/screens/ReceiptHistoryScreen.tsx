@@ -23,7 +23,7 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
   });
 
   const filtered = receipts.filter((r: any) => 
-    (r.storeName || 'New Scan').toLowerCase().includes(search.toLowerCase())
+    (r.merchantName || 'New Scan').toLowerCase().includes(search.toLowerCase())
   );
 
   const handlePress = (r: any) => {
@@ -68,7 +68,7 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
             >
               <View style={styles.iconBg}><Text style={{ fontSize: 20 }}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text></View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.storeName, { color: theme.text }]}>{r.storeName || 'New Scan'}</Text>
+                <Text style={[styles.storeName, { color: theme.text }]}>{r.merchantName || 'New Scan'}</Text>
                 <Text style={[styles.meta, { color: theme.textMuted }]}>{new Date(r.createdAt).toLocaleDateString()}</Text>
               </View>
               <Text style={[styles.amount, { color: theme.text }]}>₹{r.extractedTotal || '0'}</Text>

@@ -35,6 +35,9 @@ export class User {
   @Prop({ default: 0 })
   monthlyScanCount?: number;
 
+  @Prop({ default: '' })
+  lastResetMonth?: string;
+
   @Prop()
   lastLogin?: Date;
 }

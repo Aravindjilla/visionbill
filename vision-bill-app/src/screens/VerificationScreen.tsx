@@ -76,6 +76,32 @@ export const VerificationScreen = ({ navigation }: any) => {
             </View>
           </View>
         )}
+        ListFooterComponent={() => (
+          <View style={styles.totalBreakdown}>
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalLabel, { color: theme.textMuted }]}>Subtotal</Text>
+              <Text style={[styles.totalValue, { color: theme.text }]}>₹{items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}</Text>
+            </View>
+            {(currentScan?.cgst || 0) > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={[styles.totalLabel, { color: theme.textMuted }]}>CGST</Text>
+                <Text style={[styles.totalValue, { color: theme.text }]}>₹{currentScan?.cgst?.toFixed(2)}</Text>
+              </View>
+            )}
+            {(currentScan?.sgst || 0) > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={[styles.totalLabel, { color: theme.textMuted }]}>SGST</Text>
+                <Text style={[styles.totalValue, { color: theme.text }]}>₹{currentScan?.sgst?.toFixed(2)}</Text>
+              </View>
+            )}
+            <View style={[styles.totalRow, styles.grandTotalRow]}>
+              <Text style={[styles.totalLabel, { color: theme.text, fontFamily: 'Outfit_700Bold' }]}>Grand Total</Text>
+              <Text style={[styles.totalValue, { color: theme.primary, fontFamily: 'Outfit_700Bold', fontSize: 22 }]}>
+                ₹{currentScan?.extractedTotal?.toFixed(2) || items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+        )}
         renderItem={({ item }) => (
           <ItemCard
             name={item.cleanName}
@@ -88,7 +114,7 @@ export const VerificationScreen = ({ navigation }: any) => {
           />
         )}
         renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.sectionHeader}>{title}</Text>
+          <Text style={[styles.sectionHeader, { backgroundColor: theme.surface }]}>{title}</Text>
         )}
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
@@ -183,6 +209,33 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: 100,
+  },
+  totalBreakdown: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingHorizontal: Spacing.xs,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  totalLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+  },
+  totalValue: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  grandTotalRow: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    borderStyle: 'dashed',
   },
   footer: {
     position: 'absolute',

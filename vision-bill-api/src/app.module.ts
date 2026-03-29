@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
+import { HealthController } from './health.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ScansModule } from './scans/scans.module';
@@ -10,14 +11,15 @@ import { GroupsModule } from './groups/groups.module';
 import { PantryModule } from './pantry/pantry.module';
 
 import { BullModule } from '@nestjs/bullmq';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{
-      ttl: 900000, // 15 minutes
-      limit: 100,
+      ttl: 60000, // 1 minute
+      limit: 10,  // tighter for OCR/AI costs
     }]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -27,6 +29,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
           url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
         },
       }),
+    }),
+    BullModule.registerQueue({
+      name: 'scan-queue',
     }),
     AuthModule,
     ScansModule,
@@ -41,7 +46,13 @@ import { ThrottlerModule } from '@nestjs/throttler';
       }),
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, HealthController],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

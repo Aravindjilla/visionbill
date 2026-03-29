@@ -51,17 +51,18 @@ export class ScanProcessor extends WorkerHost {
       const isReconciled = this.reconcilerService.reconcile(items, normalizedData.total);
       
       // 5. Final Update
-      scan.rawText = rawText;
-      scan.items = items;
-      scan.extractedTotal = normalizedData.total;
-      scan.billType = normalizedData.billType;
-      scan.storeName = normalizedData.merchantName;
-      scan.merchantName = normalizedData.merchantName;
-      scan.merchantAddress = normalizedData.merchantAddress;
-      scan.taxTotal = normalizedData.taxTotal;
-      scan.cgst = normalizedData.cgst;
-      scan.sgst = normalizedData.sgst;
-      scan.status = ScanStatus.COMPLETED;
+      Object.assign(scan, {
+        rawText: NormalizerService.scrubPII(rawText),
+        items,
+        extractedTotal: normalizedData.total,
+        billType: normalizedData.billType,
+        merchantName: normalizedData.merchantName,
+        merchantAddress: normalizedData.merchantAddress,
+        taxTotal: normalizedData.taxTotal,
+        cgst: normalizedData.cgst,
+        sgst: normalizedData.sgst,
+        status: ScanStatus.COMPLETED,
+      });
       
       await scan.save();
       
@@ -104,7 +105,12 @@ export class ScanProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('failed')
-  onFailed(job: Job, error: Error) {
+  async onFailed(job: Job, error: Error) {
     this.logger.error(`Job ${job.id} failed: ${error.message}`);
+    const { scanId } = job.data;
+    if (scanId) {
+      this.logger.warn(`Marking scan ${scanId} as FAILED in database via onFailed handler`);
+      await this.scanModel.findByIdAndUpdate(scanId, { status: ScanStatus.FAILED });
+    }
   }
 }

@@ -93,7 +93,7 @@ export const useScanStore = create<ScanState>()(
       partialize: (state) => ({
         currentScan: state.currentScan,
         items: state.items,
-        currentImages: state.currentImages,
+        // currentImages excluded to prevent AsyncStorage 6MB limit issues
       }),
     }
   )

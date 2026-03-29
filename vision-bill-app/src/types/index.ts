@@ -17,7 +17,11 @@ export interface Scan {
   items: BillItem[];
   extractedTotal: number;
   billType: 'grocery' | 'restaurant';
-  storeName?: string;
+  merchantName?: string;
+  merchantAddress?: string;
+  cgst?: number;
+  sgst?: number;
+  taxTotal?: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: string;
 }
