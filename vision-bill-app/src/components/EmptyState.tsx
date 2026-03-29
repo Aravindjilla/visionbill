@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
@@ -7,13 +8,23 @@ interface EmptyStateProps {
   icon: string;
   title: string;
   subtitle: string;
+  lottieUrl?: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, lottieUrl }) => {
   return (
     <View style={styles.container}>
       <View style={styles.iconCircle}>
-        <Text style={styles.icon}>{icon}</Text>
+        {lottieUrl ? (
+          <LottieView 
+            source={{ uri: lottieUrl }} 
+            autoPlay 
+            loop 
+            style={{ width: 120, height: 120 }} 
+          />
+        ) : (
+          <Text style={styles.icon}>{icon}</Text>
+        )}
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>

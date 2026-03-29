@@ -132,6 +132,7 @@ export const GroupsScreen = () => {
           icon="👥" 
           title="No frequent groups" 
           subtitle="Create groups for your roommates or family to split bills in seconds." 
+          lottieUrl="https://lottie.host/f5108608-d210-4632-8e1f-1393693f412c/Xl1r5M1D0G.json"
         />
       )}
 

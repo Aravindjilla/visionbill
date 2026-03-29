@@ -105,6 +105,7 @@ export const PantryScreen = () => {
           icon="📦" 
           title="Digital Pantry is empty" 
           subtitle="All items from your scanned receipts will automatically appear here to track price hikes." 
+          lottieUrl="https://lottie.host/e660995c-7d5d-4f81-8b2b-6899f8d660e1/p8D960aX8U.json"
         />
       )}
 

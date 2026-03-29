@@ -9,10 +9,12 @@ import { ScanResponse } from '../types';
 import axios from 'axios';
 
 
+import LottieView from 'lottie-react-native';
+
 export const ScannerScreen = ({ navigation }: any) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState<any>(null);
-  const { addImage, currentImages, clearImages, setScan, setLoading, loading } = useScanStore();
+  const { addImage, currentImages, clearImages, setScan, setLoading, loading, loadingMessage } = useScanStore();
   const [isLongBill, setIsLongBill] = useState(false);
 
   useEffect(() => {
@@ -90,6 +92,17 @@ export const ScannerScreen = ({ navigation }: any) => {
   
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <LottieView 
+            source={{ uri: 'https://lottie.host/8e3172ca-635e-4686-a517-5e6e3cda83bc/X1Ld4A9H6p.json' }} 
+            autoPlay 
+            loop 
+            style={styles.loadingLottie}
+          />
+          <Text style={styles.loadingText}>{loadingMessage || 'Processing...'}</Text>
+        </View>
+      )}
       <CameraView 
         style={styles.camera} 
         facing="back"
@@ -190,4 +203,7 @@ const styles = StyleSheet.create({
   captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFF' },
   finishButton: { position: 'absolute', right: 40, backgroundColor: Colors.success, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   finishButtonText: { fontFamily: 'Inter_700Bold', fontSize: 14, color: '#FFF' },
+  loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  loadingLottie: { width: 250, height: 250 },
+  loadingText: { color: '#FFF', fontFamily: 'Outfit_700Bold', fontSize: 18, textAlign: 'center', marginTop: 20 },
 });

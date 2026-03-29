@@ -166,6 +166,7 @@ export const DashboardScreen = () => {
             icon="🧾" 
             title="No receipts yet" 
             subtitle="Scan your first bill to see spending insights and track your items." 
+            lottieUrl="https://lottie.host/8e3172ca-635e-4686-a517-5e6e3cda83bc/X1Ld4A9H6p.json"
           />
         )}
 
