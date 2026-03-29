@@ -8,6 +8,8 @@ import { NormalizerService } from './services/normalizer.service';
 import { StrategyFactory } from './strategies/strategy.factory';
 import { ReconcilerService } from './services/reconciler.service';
 import { PantryService } from '../pantry/pantry.service';
+import { NotificationService } from '../auth/notification.service';
+import { UserService } from '../auth/user.service';
 import { Logger } from '@nestjs/common';
 
 @Processor('scan-queue')
@@ -21,6 +23,8 @@ export class ScanProcessor extends WorkerHost {
     private strategyFactory: StrategyFactory,
     private reconcilerService: ReconcilerService,
     private pantryService: PantryService,
+    private userService: UserService,
+    private notificationService: NotificationService,
   ) {
     super();
   }
@@ -55,8 +59,25 @@ export class ScanProcessor extends WorkerHost {
       
       await scan.save();
       
+      await scan.save();
+      
       // 6. Index to Pantry
       await this.pantryService.indexScannedItems(userId, items);
+
+      // 7. Send Push Notification
+      try {
+        const user = await this.userService.findById(userId);
+        if (user?.pushToken) {
+          await this.notificationService.sendNotification(
+            user.pushToken,
+            'Scan Complete! 🧾',
+            `Processed ${items.length} items. Tap to verify and split.`,
+            { scanId }
+          );
+        }
+      } catch (error) {
+        this.logger.error(`Failed to send push notification: ${error.message}`);
+      }
       
       this.logger.log(`Successfully completed scan ${scanId}`);
       return { isReconciled };

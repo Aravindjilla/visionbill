@@ -18,4 +18,10 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
+
+  async registerPushToken(id: string, pushToken: string): Promise<UserDocument> {
+    const user = await this.userModel.findByIdAndUpdate(id, { $set: { pushToken } }, { new: true }).exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 }

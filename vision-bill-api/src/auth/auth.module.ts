@@ -10,6 +10,8 @@ import { UserService } from './user.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { GoogleStrategy } from './strategies/google.strategy';
 
+import { NotificationService } from './notification.service';
+
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
@@ -24,7 +26,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
   ],
   controllers: [AuthController, UserController],
-  providers: [AuthService, UserService, GoogleStrategy],
-  exports: [AuthService, UserService],
+  providers: [AuthService, UserService, NotificationService, GoogleStrategy],
+  exports: [AuthService, UserService, NotificationService],
 })
 export class AuthModule {}

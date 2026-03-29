@@ -24,6 +24,9 @@ export class User {
   upiId?: string;
 
   @Prop()
+  pushToken?: string;
+
+  @Prop()
   currentRefreshToken?: string;
 
   @Prop()

@@ -17,6 +17,7 @@ import { StorageService } from './services/storage.service';
 import { ScanProcessor } from './scan.processor';
 
 import { PantryModule } from '../pantry/pantry.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PantryModule } from '../pantry/pantry.module';
       { name: BillItem.name, schema: BillItemSchema },
       { name: ScanSession.name, schema: ScanSessionSchema },
     ]),
+    AuthModule,
     PantryModule,
     ConfigModule,
     BullModule.registerQueue({

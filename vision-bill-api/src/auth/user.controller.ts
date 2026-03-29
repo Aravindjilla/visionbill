@@ -19,4 +19,9 @@ export class UserController {
   ) {
     return this.userService.updateProfile(id, { mobile, upiId });
   }
+
+  @Post('push-token/:id')
+  async registerPushToken(@Param('id') id: string, @Body('token') token: string) {
+    return this.userService.registerPushToken(id, token);
+  }
 }
