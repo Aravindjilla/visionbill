@@ -13,7 +13,21 @@ export class NormalizerService {
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
+  private scrubPII(text: string): string {
+    return text
+      // Mask Card Numbers (e.g., 4111-12XX-XXXX-1111)
+      .replace(/\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}/g, '**** **** **** ****')
+      // Mask expiry dates
+      .replace(/\b\d{2}\/\d{2,4}\b/g, '**/**')
+      // Mask possible phone numbers
+      .replace(/\+?\d{2,3}[\s-]?\d{10}/g, '***-***-****')
+      // Mask Email addresses
+      .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '****@****.***');
+  }
+
   async normalizeText(rawText: string): Promise<any> {
+    const cleanText = this.scrubPII(rawText);
+    
     if (!this.configService.get<string>('GEMINI_API_KEY') || this.configService.get<string>('GEMINI_API_KEY') === 'mock-gemini-key') {
       // Return stub for development
       return {
@@ -29,7 +43,7 @@ export class NormalizerService {
     const prompt = `
       You are a retail receipt expert. Analyze the following OCR raw text and extract an itemized list in JSON format.
       Raw Text:
-      "${rawText}"
+      "${cleanText}"
 
       Requirements:
       1. Correct shorthand names to descriptive clean names (e.g., ORG_TMT_1KG -> Organic Tomato 1kg).

@@ -19,6 +19,12 @@ export class User {
 
   @Prop()
   mobile?: string;
+
+  @Prop()
+  currentRefreshToken?: string;
+
+  @Prop()
+  lastLogin?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

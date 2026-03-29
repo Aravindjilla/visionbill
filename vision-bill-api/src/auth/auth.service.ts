@@ -18,13 +18,33 @@ export class AuthService {
     } else {
       user.displayName = details.displayName;
       user.avatar = details.avatar;
-      await user.save();
+      user.lastLogin = new Date();
     }
     
+    return this.generateTokens(user);
+  }
+
+  async generateTokens(user: UserDocument) {
     const payload = { email: user.email, sub: user._id };
+    
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    
+    user.currentRefreshToken = refreshToken;
+    await user.save();
+    
     return {
       user,
-      accessToken: this.jwtService.sign(payload),
+      accessToken,
+      refreshToken,
     };
+  }
+
+  async refresh(userId: string, incomingToken: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user || user.currentRefreshToken !== incomingToken) {
+      throw new Error('Invalid refresh token');
+    }
+    return this.generateTokens(user);
   }
 }
