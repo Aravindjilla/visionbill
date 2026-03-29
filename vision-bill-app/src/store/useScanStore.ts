@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BillItem, Scan } from '../types';
 
 interface ScanState {
@@ -16,59 +18,68 @@ interface ScanState {
   setLoading: (loading: boolean, message?: string) => void;
 }
 
-export const useScanStore = create<ScanState>((set) => ({
-  currentScan: null,
-  items: [],
-  currentImages: [],
-  loading: false,
-  loadingMessage: '',
-  error: null,
-  setScan: (scan: Scan) => set({ 
-    currentScan: scan, 
-    items: (scan.items || []).map((item) => ({ 
-      ...item, 
-      checked: false, 
-      assignedParticipants: [],
-      isSplit: false
-    })) 
-  }),
+export const useScanStore = create<ScanState>()(
+  persist(
+    (set) => ({
+      currentScan: null,
+      items: [],
+      currentImages: [],
+      loading: false,
+      loadingMessage: '',
+      error: null,
+      setScan: (scan: Scan) => set({ 
+        currentScan: scan, 
+        items: (scan.items || []).map((item) => ({ 
+          ...item, 
+          checked: false, 
+          assignedParticipants: [],
+          isSplit: false
+        })) 
+      }),
 
-  toggleItem: (index) => set((state) => {
-    const newItems = [...state.items];
-    newItems[index] = { ...newItems[index], checked: !newItems[index].checked };
-    return { items: newItems };
-  }),
+      toggleItem: (index) => set((state) => {
+        const newItems = [...state.items];
+        newItems[index] = { ...newItems[index], checked: !newItems[index].checked };
+        return { items: newItems };
+      }),
 
-  toggleParticipantAssignment: (itemIndex: number, participantId: string) => set((state) => {
-    const newItems = [...state.items];
-    const item = { ...newItems[itemIndex] };
-    const currentAssignments = item.assignedParticipants || [];
-    
-    // Check if participant already assigned
-    const exists = currentAssignments.some(ap => ap.participantId === participantId);
-    
-    let nextAssignments;
-    if (exists) {
-      // Remove
-      nextAssignments = currentAssignments.filter(ap => ap.participantId !== participantId);
-    } else {
-      // Add
-      nextAssignments = [...currentAssignments, { participantId, share: 0 }];
+      toggleParticipantAssignment: (itemIndex: number, participantId: string) => set((state) => {
+        const newItems = [...state.items];
+        const item = { ...newItems[itemIndex] };
+        const currentAssignments = item.assignedParticipants || [];
+        
+        const exists = currentAssignments.some(ap => ap.participantId === participantId);
+        
+        let nextAssignments;
+        if (exists) {
+          nextAssignments = currentAssignments.filter(ap => ap.participantId !== participantId);
+        } else {
+          nextAssignments = [...currentAssignments, { participantId, share: 0 }];
+        }
+
+        const count = nextAssignments.length;
+        item.assignedParticipants = nextAssignments.map(ap => ({
+          ...ap,
+          share: count > 0 ? 1 / count : 0
+        }));
+        item.isSplit = count > 1;
+
+        newItems[itemIndex] = item;
+        return { items: newItems };
+      }),
+      addImage: (image: any) => set((state) => ({ currentImages: [...state.currentImages, image] })),
+      clearImages: () => set({ currentImages: [] }),
+      setLoading: (loading, message = '') => set({ loading, loadingMessage: message }),
+    }),
+    {
+      name: 'vision-bill-scan-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        currentScan: state.currentScan,
+        items: state.items,
+        currentImages: state.currentImages,
+      }),
     }
-
-    // Equally redistribute shares
-    const count = nextAssignments.length;
-    item.assignedParticipants = nextAssignments.map(ap => ({
-      ...ap,
-      share: count > 0 ? 1 / count : 0
-    }));
-    item.isSplit = count > 1;
-
-    newItems[itemIndex] = item;
-    return { items: newItems };
-  }),
-  addImage: (image: any) => set((state) => ({ currentImages: [...state.currentImages, image] })),
-  clearImages: () => set({ currentImages: [] }),
-  setLoading: (loading, message = '') => set({ loading, loadingMessage: message }),
-}));
+  )
+);
 
