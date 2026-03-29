@@ -14,12 +14,15 @@ import { PantryService } from '../pantry/pantry.service';
 
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { User, UserDocument } from '../auth/schemas/user.schema';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class ScansService {
   constructor(
     @InjectModel(Scan.name) private scanModel: Model<ScanDocument>,
     @InjectModel(ScanSession.name) private sessionModel: Model<ScanSessionDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private ocrService: OcrService,
     private normalizerService: NormalizerService,
     private strategyFactory: StrategyFactory,
@@ -53,6 +56,14 @@ export class ScansService {
   }
 
   async createScan(userId: string, files: any[]) {
+    // 0. Tier & Limit Check
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new BadRequestException('User not found');
+    
+    if (user.tier === 'free' && (user.monthlyScanCount || 0) >= 5) {
+      throw new BadRequestException('Monthly scan limit reached for Free tier. Please upgrade to Pro.');
+    }
+
     // 1. Image Stitching
     const stitchedPath = await this.stitchingService.stitchImages(files.map((f: any) => f.path || 'placeholder-url'));
 
@@ -71,6 +82,9 @@ export class ScansService {
       scanId: scan._id,
       userId,
     });
+
+    // 5. Increment usage
+    await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
 
     return { scan, status: 'Background processing started' };
   }
@@ -116,9 +130,14 @@ export class ScansService {
     const scan = await this.scanModel.create({
       userId,
       storeName: 'VisionBazaar Demo Store',
+      merchantName: 'VisionBazaar Private Limited',
+      merchantAddress: '123 Tech Park, Bengaluru, KA',
       billType: 'grocery',
       items: demoItems,
       extractedTotal: 425.00,
+      taxTotal: 18.00,
+      cgst: 9.00,
+      sgst: 9.00,
       status: ScanStatus.COMPLETED,
       imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400',
     });

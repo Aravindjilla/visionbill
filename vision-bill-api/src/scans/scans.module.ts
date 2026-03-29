@@ -7,6 +7,7 @@ import { ScansService } from './scans.service';
 import { Scan, ScanSchema } from './schemas/scan.schema';
 import { BillItem, BillItemSchema } from './schemas/bill-item.schema';
 import { ScanSession, ScanSessionSchema } from './schemas/scan-session.schema';
+import { User, UserSchema } from '../auth/schemas/user.schema';
 
 import { OcrService } from './services/ocr.service';
 import { NormalizerService } from './services/normalizer.service';
@@ -25,6 +26,7 @@ import { AuthModule } from '../auth/auth.module';
       { name: Scan.name, schema: ScanSchema },
       { name: BillItem.name, schema: BillItemSchema },
       { name: ScanSession.name, schema: ScanSessionSchema },
+      { name: User.name, schema: UserSchema },
     ]),
     AuthModule,
     PantryModule,

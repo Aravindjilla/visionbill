@@ -29,8 +29,11 @@ export class User {
   @Prop({ default: 500 })
   savingsGoal?: number;
 
-  @Prop()
-  currentRefreshToken?: string;
+  @Prop({ default: 'free' })
+  tier?: string;
+
+  @Prop({ default: 0 })
+  monthlyScanCount?: number;
 
   @Prop()
   lastLogin?: Date;

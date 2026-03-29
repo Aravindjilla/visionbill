@@ -5,7 +5,10 @@ import { User, UserDocument } from './schemas/user.schema';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel('Scan') private scanModel: Model<any>,
+  ) {}
 
   async findById(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id).exec();
@@ -26,6 +29,10 @@ export class UserService {
   }
 
   async deleteAccount(id: string): Promise<UserDocument> {
+    // Cascading Delete for DPDP Compliance
+    await this.scanModel.deleteMany({ userId: id }).exec();
+    // TODO: cascade to PantryItems and Groups
+    
     const user = await this.userModel.findByIdAndDelete(id).exec();
     if (!user) throw new NotFoundException('User not found');
     return user;

@@ -55,6 +55,12 @@ export class ScanProcessor extends WorkerHost {
       scan.items = items;
       scan.extractedTotal = normalizedData.total;
       scan.billType = normalizedData.billType;
+      scan.storeName = normalizedData.merchantName;
+      scan.merchantName = normalizedData.merchantName;
+      scan.merchantAddress = normalizedData.merchantAddress;
+      scan.taxTotal = normalizedData.taxTotal;
+      scan.cgst = normalizedData.cgst;
+      scan.sgst = normalizedData.sgst;
       scan.status = ScanStatus.COMPLETED;
       
       await scan.save();

@@ -34,26 +34,17 @@ export class ScansController {
   @UseInterceptors(FilesInterceptor('images', 10))
   async uploadScan(@UploadedFiles() files: any[], @Req() req: any) {
     const userId = req.user?.sub;
-    if (!userId && process.env.NODE_ENV === 'production') {
+    if (!userId) {
       throw new Error('Unauthorized');
     }
-    const finalUserId = userId || 'demo-user-id'; // Fallback for dev only
-    return this.scansService.createScan(finalUserId, files);
+    return this.scansService.createScan(userId, files);
   }
 
-
   @Get()
-  async findAll(
-    @Req() req: any,
-    @Query('limit') limit?: string,
-    @Query('page') page?: string,
-  ) {
-    const userId = req.user?.sub || 'demo-user-id';
-    return this.scansService.findAll(
-      userId,
-      limit ? parseInt(limit, 10) : undefined,
-      page ? parseInt(page, 10) : 1,
-    );
+  async findAll(@Req() req: any) {
+    const userId = req.user?.sub;
+    if (!userId) throw new Error('Unauthorized');
+    return this.scansService.findAll(userId);
   }
 
   @Get(':id')

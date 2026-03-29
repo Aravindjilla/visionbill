@@ -7,10 +7,11 @@ import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { useScanStore } from '../store/useScanStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { PaywallModal } from '../components/PaywallModal';
 import { ScanResponse } from '../types';
 import axios from 'axios';
 import api from '../utils/api';
-
 
 import LottieView from 'lottie-react-native';
 
@@ -18,7 +19,16 @@ export const ScannerScreen = ({ navigation }: any) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState<any>(null);
   const { addImage, currentImages, clearImages, setScan, setLoading, setError, loading, loadingMessage, error } = useScanStore();
+  const { tier, monthlyScanCount } = useAuthStore();
+  
   const [isLongBill, setIsLongBill] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+
+  useEffect(() => {
+    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+      setPaywallVisible(true);
+    }
+  }, [tier, monthlyScanCount]);
 
   useEffect(() => {
     if (!permission) {

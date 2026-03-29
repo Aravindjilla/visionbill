@@ -31,11 +31,26 @@ export class Scan {
   @Prop()
   storeName?: string;
 
+  @Prop()
+  merchantName?: string;
+
+  @Prop()
+  merchantAddress?: string;
+
   @Prop({ type: [BillItemSchema], default: [] })
   items: BillItem[];
 
   @Prop()
   extractedTotal?: number;
+
+  @Prop()
+  taxTotal?: number;
+
+  @Prop()
+  cgst?: number;
+
+  @Prop()
+  sgst?: number;
 
   @Prop({ enum: ScanStatus, default: ScanStatus.PENDING })
   status: ScanStatus;

@@ -20,16 +20,19 @@ import { EmptyState } from '../components/EmptyState';
 import { ExportService } from '../utils/export';
 import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { PaywallModal } from '../components/PaywallModal';
 
 export const DashboardScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
   const theme = useTheme();
   const [showAllReceipts, setShowAllReceipts] = useState(false);
   const { setScan, lastDeleted, setLastDeleted } = useScanStore();
-  const { userId } = useAuthStore();
+  const { userId, tier, monthlyScanCount } = useAuthStore();
 
   const [undoVisible, setUndoVisible] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<'limit' | 'manual'>('manual');
 
   const handleExportCSV = async (receipts: any[]) => {
     const exportData = receipts.map(r => ({
@@ -170,6 +173,12 @@ export const DashboardScreen = ({ navigation }: any) => {
 
   const namePrefix = data?.profile?.displayName || data?.profile?.name || 'User';
   const initials = namePrefix.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const openPaywall = (reason: 'limit' | 'manual' = 'manual') => {
+    setPaywallReason(reason);
+    setPaywallVisible(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -365,12 +374,18 @@ export const DashboardScreen = ({ navigation }: any) => {
           <Text style={[styles.bannerDesc, { color: theme.text }]}>Unlock advanced price tracking and shared household pantries.</Text>
           <Pressable 
             style={[styles.upgradeBtn, { backgroundColor: theme.primary }]}
-            onPress={() => Alert.alert('VisionBill Premium', 'Premium plans are coming soon! Stay tuned for household sharing and unlimited cloud storage.')}
+            onPress={() => openPaywall('manual')}
           >
             <Text style={[styles.upgradeBtnText, { color: theme.onPrimary }]}>Upgrade Now</Text>
           </Pressable>
         </View>
       </ScrollView>
+
+      <PaywallModal 
+        visible={paywallVisible} 
+        onClose={() => setPaywallVisible(false)} 
+        reason={paywallReason}
+      />
 
       {/* Undo Snackbar */}
       <AnimatePresence>
