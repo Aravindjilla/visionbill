@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
 export const LoginScreen = ({ navigation }: any) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.hero}>
@@ -18,13 +20,23 @@ export const LoginScreen = ({ navigation }: any) => {
 
       <View style={styles.footer}>
         <Pressable 
-          style={styles.googleButton}
+          style={[styles.googleButton, isLoading && { opacity: 0.8 }]}
+          disabled={isLoading}
           onPress={async () => {
+            setIsLoading(true);
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            navigation.navigate('Main');
+            // Simulate API latency
+            setTimeout(() => {
+              setIsLoading(false);
+              navigation.navigate('Main');
+            }, 1500);
           }}
         >
-          <Text style={styles.googleButtonText}>Continue with Google</Text>
+          {isLoading ? (
+            <ActivityIndicator color={Colors.primary} />
+          ) : (
+            <Text style={styles.googleButtonText}>Continue with Google</Text>
+          )}
         </Pressable>
         <Text style={styles.terms}>By continuing, you agree to our Terms and Privacy Policy</Text>
       </View>

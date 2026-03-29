@@ -23,10 +23,15 @@ export class PantryService {
       const existing = await this.pantryModel.findOne({ userId, cleanName: item.cleanName });
 
       if (existing) {
-        // Update price history
-        existing.lastPrice = existing.currentPrice;
-        existing.currentPrice = item.price;
-        existing.priceHistory.push({ date: new Date(), price: item.price });
+        // Update price history (deduplicate)
+        const lastEntry = existing.priceHistory[existing.priceHistory.length - 1];
+        const isSameDay = lastEntry && new Date(lastEntry.date).toDateString() === new Date().toDateString();
+        
+        if (!isSameDay || lastEntry.price !== item.price) {
+          existing.lastPrice = existing.currentPrice;
+          existing.currentPrice = item.price;
+          existing.priceHistory.push({ date: new Date(), price: item.price });
+        }
         
         // Keep only last 10 records for visualization
         if (existing.priceHistory.length > 10) existing.priceHistory.shift();

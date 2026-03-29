@@ -54,8 +54,11 @@ export const ProfileScreen = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: async () => {
-        // In a real app, clear store/navigation
-        Alert.alert('Logged out', 'You have been logged out.');
+        setSaving(true);
+        setTimeout(() => {
+          setSaving(false);
+          Alert.alert('Logged out', 'You have been logged out.');
+        }, 1000);
       }},
     ]);
   };
@@ -71,12 +74,15 @@ export const ProfileScreen = () => {
           text: 'Delete Everything', 
           style: 'destructive', 
           onPress: async () => {
+            setSaving(true);
             try {
               const userId = await getUserId();
               await api.delete(`/users/${userId}`);
               Alert.alert('Account Wiped', 'Your data has been permanently deleted.');
             } catch (err) {
               Alert.alert('Error', 'Failed to delete account.');
+            } finally {
+              setSaving(false);
             }
           }
         },
@@ -133,11 +139,19 @@ export const ProfileScreen = () => {
 
         <View style={styles.dangerZone}>
           <Text style={styles.dangerTitle}>Danger Zone</Text>
-          <Pressable style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout Session</Text>
+          <Pressable 
+            style={[styles.logoutButton, saving && { opacity: 0.5 }]} 
+            onPress={handleLogout}
+            disabled={saving}
+          >
+            <Text style={styles.logoutText}>{saving ? 'Wait...' : 'Logout Session'}</Text>
           </Pressable>
-          <Pressable style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Text style={styles.deleteText}>Delete My Account Permanently</Text>
+          <Pressable 
+            style={[styles.deleteButton, saving && { opacity: 0.5 }]} 
+            onPress={handleDeleteAccount}
+            disabled={saving}
+          >
+            <Text style={styles.deleteText}>{saving ? 'Deleting...' : 'Delete My Account Permanently'}</Text>
           </Pressable>
         </View>
       </ScrollView>

@@ -59,8 +59,6 @@ export class ScanProcessor extends WorkerHost {
       
       await scan.save();
       
-      await scan.save();
-      
       // 6. Index to Pantry
       await this.pantryService.indexScannedItems(userId, items);
 

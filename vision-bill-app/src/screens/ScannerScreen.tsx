@@ -7,6 +7,7 @@ import { Spacing } from '../theme/spacing';
 import { useScanStore } from '../store/useScanStore';
 import { ScanResponse } from '../types';
 import axios from 'axios';
+import api from '../utils/api';
 
 
 import LottieView from 'lottie-react-native';
@@ -47,7 +48,7 @@ export const ScannerScreen = ({ navigation }: any) => {
         } as any);
       });
 
-      const response = await axios.post<ScanResponse>('http://localhost:3000/scans/upload', formData, {
+      const response = await api.post<ScanResponse>('/scans/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -88,7 +89,30 @@ export const ScannerScreen = ({ navigation }: any) => {
     }
   };
 
-  if (!permission) return <View style={styles.container} />;
+  if (!permission) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 40 }]}>
+        <Text style={{ color: '#FFF', fontSize: 24, fontFamily: 'Outfit_700Bold', textAlign: 'center' }}>📸 Camera Access</Text>
+        <Text style={{ color: '#AAA', fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center', marginTop: 12, marginBottom: 32 }}>
+          We need your camera to scan receipts and extract itemized data.
+        </Text>
+        <Pressable 
+          onPress={requestPermission}
+          style={{ backgroundColor: Colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 }}
+        >
+          <Text style={{ color: '#FFF', fontFamily: 'Inter_700Bold' }}>Grant Access</Text>
+        </Pressable>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.container}>

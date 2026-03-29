@@ -173,7 +173,7 @@ const MainTabs = () => (
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 
 export default function App() {
-  const [showOnboarding, setShowOnboarding] = React.useState(true);
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -181,6 +181,22 @@ export default function App() {
     Outfit_600SemiBold,
     Outfit_700Bold,
   });
+
+  useEffect(() => {
+    checkOnboarding();
+  }, []);
+
+  const checkOnboarding = async () => {
+    const hasOnboarded = await AsyncStorage.getItem('HAS_ONBOARDED');
+    if (!hasOnboarded) {
+      setShowOnboarding(true);
+    }
+  };
+
+  const handleFinishOnboarding = async () => {
+    await AsyncStorage.setItem('HAS_ONBOARDED', 'true');
+    setShowOnboarding(false);
+  };
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -192,7 +208,7 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   if (showOnboarding) {
-    return <OnboardingScreen onFinish={() => setShowOnboarding(false)} />;
+    return <OnboardingScreen onFinish={handleFinishOnboarding} />;
   }
 
   return (
