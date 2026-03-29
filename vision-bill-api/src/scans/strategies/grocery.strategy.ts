@@ -11,6 +11,8 @@ export class GroceryStrategy implements IBillStrategy {
       unit: item.unit || 'pcs',
       price: item.price || 0,
       imageUrl: item.imageUrl,
+      assignedParticipants: [],
+      isSplit: false,
     }));
   }
 

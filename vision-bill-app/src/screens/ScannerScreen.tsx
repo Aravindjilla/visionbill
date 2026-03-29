@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
+import { Typography } from '../theme/typography';
 import { useScanStore } from '../store/useScanStore';
 import { ScanResponse } from '../types';
 import axios from 'axios';
@@ -100,15 +101,15 @@ export const ScannerScreen = ({ navigation }: any) => {
   if (!permission.granted) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 40 }]}>
-        <Text style={{ color: '#FFF', fontSize: 24, fontFamily: 'Outfit_700Bold', textAlign: 'center' }}>📸 Camera Access</Text>
-        <Text style={{ color: '#AAA', fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center', marginTop: 12, marginBottom: 32 }}>
+        <Text style={[Typography.h2, { color: Colors.text, textAlign: 'center' }]}>📸 Camera Access</Text>
+        <Text style={[Typography.caption, { color: Colors.textMuted, textAlign: 'center', marginTop: 12, marginBottom: 32 }]}>
           We need your camera to scan receipts and extract itemized data.
         </Text>
         <Pressable 
           onPress={requestPermission}
           style={{ backgroundColor: Colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 }}
         >
-          <Text style={{ color: '#FFF', fontFamily: 'Inter_700Bold' }}>Grant Access</Text>
+          <Text style={[Typography.bodyBold, { color: Colors.onPrimary }]}>Grant Access</Text>
         </Pressable>
       </View>
     );
@@ -199,7 +200,7 @@ export const ScannerScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: Colors.surface },
   camera: { flex: 1 },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'space-between' },
   ghostContainer: {
@@ -214,20 +215,20 @@ const styles = StyleSheet.create({
   ghostImage: { width: '100%', height: 400, marginTop: -280 },
   ghostOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.primary, opacity: 0.1 },
   header: { paddingTop: 60, alignItems: 'center' },
-  headerTitle: { fontFamily: 'Outfit_700Bold', fontSize: 20, color: '#FFF' },
+  headerTitle: { ...Typography.h3, color: Colors.text },
   modeToggle: { marginTop: 12, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 12 },
-  modeToggleText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#FFF' },
+  modeToggleText: { ...Typography.label, color: Colors.text, textTransform: 'none' },
   guideContainer: { flex: 1, padding: 40, justifyContent: 'center' },
   guide: { flex: 1, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 20, borderStyle: 'dashed' },
   footer: { paddingBottom: 40, alignItems: 'center' },
   previewScroll: { maxHeight: 60, marginBottom: 20, paddingHorizontal: 20 },
-  previewThumb: { width: 40, height: 60, borderRadius: 4, marginRight: 8, borderWidth: 1, borderColor: '#FFF' },
+  previewThumb: { width: 40, height: 60, borderRadius: 4, marginRight: 8, borderWidth: 1, borderColor: Colors.text },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
   captureButton: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
-  captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FFF' },
+  captureInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.text },
   finishButton: { position: 'absolute', right: 40, backgroundColor: Colors.success, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  finishButtonText: { fontFamily: 'Inter_700Bold', fontSize: 14, color: '#FFF' },
+  finishButtonText: { ...Typography.bodyBold, color: Colors.onPrimary },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 100, alignItems: 'center', justifyContent: 'center', padding: 40 },
   loadingLottie: { width: 250, height: 250 },
-  loadingText: { color: '#FFF', fontFamily: 'Outfit_700Bold', fontSize: 18, textAlign: 'center', marginTop: 20 },
+  loadingText: { color: Colors.text, ...Typography.h3, textAlign: 'center', marginTop: 20 },
 });

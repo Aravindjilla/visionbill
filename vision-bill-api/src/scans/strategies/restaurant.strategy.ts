@@ -11,6 +11,8 @@ export class RestaurantStrategy implements IBillStrategy {
       unit: 'serv',
       price: item.price || 0,
       imageUrl: item.imageUrl,
+      assignedParticipants: [],
+      isSplit: false,
     }));
   }
 }

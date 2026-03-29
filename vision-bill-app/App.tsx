@@ -174,6 +174,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null);
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -183,14 +184,19 @@ export default function App() {
   });
 
   useEffect(() => {
-    checkOnboarding();
+    initializeApp();
   }, []);
 
-  const checkOnboarding = async () => {
+  const initializeApp = async () => {
+    // Check Onboarding
     const hasOnboarded = await AsyncStorage.getItem('HAS_ONBOARDED');
     if (!hasOnboarded) {
       setShowOnboarding(true);
     }
+
+    // Check Auth
+    const token = await AsyncStorage.getItem('vision_bill_access_token');
+    setIsAuthenticated(!!token);
   };
 
   const handleFinishOnboarding = async () => {
@@ -205,7 +211,7 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || isAuthenticated === null) return null;
 
   if (showOnboarding) {
     return <OnboardingScreen onFinish={handleFinishOnboarding} />;

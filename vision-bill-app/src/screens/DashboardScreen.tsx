@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Dimensions, RefreshContr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
+import { Typography } from '../theme/typography';
+import { GlassCard } from '../components/GlassCard';
 import { Shimmer } from '../components/Shimmer';
 import axios from 'axios';
 import { ErrorView } from '../components/ErrorView';
@@ -114,19 +116,19 @@ export const DashboardScreen = () => {
             ))
           ) : (
             stats.map((s, i) => (
-              <View key={i} style={styles.statCard}>
+              <GlassCard key={i} style={styles.statCard}>
                 <Text style={styles.statLabel}>{s.label}</Text>
                 <Text style={styles.statValue}>{s.value}</Text>
                 <Text style={[styles.statChange, { color: s.pos ? Colors.success : Colors.error }]}>
                   {s.change}
                 </Text>
-              </View>
+              </GlassCard>
             ))
           )}
         </View>
 
         {/* Insight Card: Trend */}
-        <View style={styles.insightCard}>
+        <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Text style={styles.insightTitle}>Spending Trend</Text>
             <Pressable><Text style={styles.viewMore}>View Detail</Text></Pressable>
@@ -150,11 +152,11 @@ export const DashboardScreen = () => {
               ))
             )}
           </View>
-        </View>
+        </GlassCard>
 
         {/* Insight Card: Category Breakdown */}
         {!loading && Object.keys(byCategory).length > 0 && (
-          <View style={styles.insightCard}>
+          <GlassCard style={styles.insightCard}>
             <Text style={[styles.insightTitle, { marginBottom: 16 }]}>Category Breakdown</Text>
             {Object.entries(byCategory).map(([cat, val]: [string, any]) => {
               const total = parseFloat(data?.stats?.find((s: any) => s.label === 'Total Spent')?.value.replace('₹', '') || '1');
@@ -171,12 +173,12 @@ export const DashboardScreen = () => {
                 </View>
               );
             })}
-          </View>
+          </GlassCard>
         )}
 
         {/* Savings Progress Card */}
         {!loading && (
-          <View style={styles.savingsCard}>
+          <GlassCard style={styles.savingsCard}>
             <View style={styles.savingsInfo}>
               <Text style={styles.savingsTitle}>Total Savings This Month</Text>
               <Text style={styles.savingsAmount}>₹{data?.stats?.find((s: any) => s.label === 'Saved')?.value.replace('₹', '') || 0}</Text>
@@ -189,14 +191,14 @@ export const DashboardScreen = () => {
               strokeWidth={8}
               radius={32}
               chartConfig={{
-                backgroundColor: Colors.card,
-                backgroundGradientFrom: Colors.card,
-                backgroundGradientTo: Colors.card,
+                backgroundColor: 'transparent',
+                backgroundGradientFrom: 'transparent',
+                backgroundGradientTo: 'transparent',
                 color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
               }}
               hideLegend
             />
-          </View>
+          </GlassCard>
         )}
 
         {/* Recent Receipts Section */}
@@ -262,52 +264,52 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surface },
   scrollContent: { paddingBottom: 100 },
   header: { padding: Spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeText: { fontFamily: 'Inter_400Regular', fontSize: 14, color: Colors.textMuted },
-  userName: { fontFamily: 'Outfit_700Bold', fontSize: 24, color: Colors.text },
+  welcomeText: { ...Typography.caption, color: Colors.textMuted },
+  userName: { ...Typography.h1, color: Colors.text },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#FFF', fontFamily: 'Outfit_700Bold', fontSize: 18 },
+  avatarText: { color: Colors.onPrimary, ...Typography.subtitle },
   statsRow: { flexDirection: 'row', paddingHorizontal: Spacing.lg, justifyContent: 'space-between', marginBottom: 24 },
-  statCard: { backgroundColor: Colors.card, padding: 16, borderRadius: 20, width: (width - 40 - 16) / 3, borderWidth: 1, borderColor: Colors.border },
-  statLabel: { fontFamily: 'Inter_400Regular', fontSize: 11, color: Colors.textMuted },
-  statValue: { fontFamily: 'Outfit_700Bold', fontSize: 16, color: Colors.text, marginTop: 4 },
-  statChange: { fontFamily: 'Inter_700Bold', fontSize: 10, marginTop: 2 },
-  insightCard: { backgroundColor: Colors.card, marginHorizontal: Spacing.lg, borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: Colors.border },
+  statCard: { padding: 16, width: (width - 40 - 16) / 3 },
+  statLabel: { ...Typography.tiny, color: Colors.textMuted },
+  statValue: { ...Typography.bodyBold, color: Colors.text, marginTop: 4 },
+  statChange: { ...Typography.tiny, fontFamily: 'Inter_700Bold', marginTop: 2 },
+  insightCard: { marginHorizontal: Spacing.lg, padding: 20, marginBottom: 24 },
   insightHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  insightTitle: { fontFamily: 'Outfit_700Bold', fontSize: 18, color: Colors.text },
-  viewMore: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.primary },
+  insightTitle: { ...Typography.h3, color: Colors.text },
+  viewMore: { ...Typography.label, color: Colors.primary, textTransform: 'none' },
   chartArea: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120, paddingBottom: 10 },
   chartBarContainer: { alignItems: 'center' },
   chartBar: { width: 12, backgroundColor: Colors.primary, borderRadius: 6 },
-  chartDate: { color: Colors.textMuted, fontSize: 10, marginTop: 10, fontFamily: 'Inter_400Regular' },
+  chartDate: { color: Colors.textMuted, ...Typography.tiny, marginTop: 10 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, marginBottom: 16 },
-  sectionTitle: { fontFamily: 'Outfit_700Bold', fontSize: 20, color: Colors.text },
+  sectionTitle: { ...Typography.h2, color: Colors.text },
   receiptCard: { flexDirection: 'row', padding: 16, backgroundColor: Colors.card, marginHorizontal: Spacing.lg, borderRadius: 16, marginBottom: 12, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  receiptIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.border, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  receiptIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   receiptIconText: { fontSize: 20 },
   receiptMain: { flex: 1 },
-  storeName: { fontFamily: 'Inter_700Bold', fontSize: 16, color: Colors.text },
-  receiptMeta: { fontFamily: 'Inter_400Regular', fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  storeName: { ...Typography.bodyBold, color: Colors.text },
+  receiptMeta: { ...Typography.caption, color: Colors.textMuted, marginTop: 2 },
   receiptRight: { alignItems: 'flex-end' },
-  receiptAmount: { fontFamily: 'Outfit_600SemiBold', fontSize: 16, color: Colors.text },
-  statusBadge: { color: Colors.success, fontSize: 12, marginTop: 4 },
-  banner: { marginHorizontal: Spacing.lg, padding: 24, backgroundColor: 'rgba(26, 115, 232, 0.1)', borderRadius: 24, borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.primary, marginTop: 12 },
-  bannerTitle: { fontFamily: 'Outfit_700Bold', fontSize: 18, color: Colors.primary },
-  bannerDesc: { fontFamily: 'Inter_400Regular', fontSize: 13, color: Colors.text, marginTop: 8, lineHeight: 18 },
+  receiptAmount: { ...Typography.subtitle, color: Colors.text },
+  statusBadge: { ...Typography.tiny, marginTop: 4 },
+  banner: { marginHorizontal: Spacing.lg, padding: 24, backgroundColor: Colors.glassPrimary, borderRadius: 24, borderStyle: 'dashed', borderWidth: 1, borderColor: Colors.primary, marginTop: 12 },
+  bannerTitle: { ...Typography.h3, color: Colors.primary },
+  bannerDesc: { ...Typography.caption, color: Colors.text, marginTop: 8, lineHeight: 18 },
   upgradeBtn: { backgroundColor: Colors.primary, alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginTop: 16 },
-  upgradeBtnText: { color: '#FFF', fontFamily: 'Inter_700Bold', fontSize: 12 },
+  upgradeBtnText: { color: Colors.onPrimary, ...Typography.label, textTransform: 'none' },
   catRow: { marginBottom: 16 },
   catInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  catLabel: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.text },
-  catValue: { fontFamily: 'Outfit_700Bold', fontSize: 14, color: Colors.primary },
-  progressBarBg: { height: 8, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden' },
+  catLabel: { ...Typography.bodySemibold, color: Colors.text },
+  catValue: { ...Typography.subtitle, color: Colors.primary },
+  progressBarBg: { height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 4 },
   exportActions: { flexDirection: 'row', marginTop: 8 },
   exportBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
-  exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: Colors.text },
-  savingsCard: { marginHorizontal: Spacing.lg, backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.2)' },
+  exportBtnText: { ...Typography.tiny, color: Colors.text, fontFamily: 'Inter_600SemiBold' },
+  savingsCard: { marginHorizontal: Spacing.lg, borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: Colors.card, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border },
   savingsInfo: { flex: 1 },
-  savingsTitle: { fontFamily: 'Inter_400Regular', fontSize: 12, color: Colors.textMuted },
-  savingsAmount: { fontFamily: 'Outfit_700Bold', fontSize: 24, color: Colors.success, marginTop: 4 },
-  savingsGoalText: { fontFamily: 'Inter_600SemiBold', fontSize: 13, color: Colors.text, marginTop: 8 },
+  savingsTitle: { ...Typography.tiny, color: Colors.textMuted },
+  savingsAmount: { ...Typography.h2, color: Colors.success, marginTop: 4 },
+  savingsGoalText: { ...Typography.captionSemibold, color: Colors.text, marginTop: 8 },
 });
