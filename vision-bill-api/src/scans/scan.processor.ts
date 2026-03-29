@@ -3,6 +3,7 @@ import { Job } from 'bullmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as fs from 'fs';
+import axios from 'axios';
 import { Scan, ScanDocument, ScanStatus } from './schemas/scan.schema';
 import { OcrService } from './services/ocr.service';
 import { NormalizerService } from './services/normalizer.service';
@@ -49,11 +50,12 @@ export class ScanProcessor extends WorkerHost {
         normalizedData = await this.normalizerService.normalizeImage(imageBuffer);
         rawTextForStorage = normalizedData.rawText || '';
       } else {
-        // Fallback to legacy Cloudinary flow if local path missing (shouldn't happen with New Rec 1)
-        this.logger.warn(`Local path missing for scan ${scanId}, falling back to legacy OCR`);
-        const rawText = await this.ocrService.processImage(scan.imageUrl);
-        normalizedData = await this.normalizerService.normalizeText(rawText);
-        rawTextForStorage = rawText;
+        // Fallback to legacy Cloudinary flow if local path missing
+        this.logger.warn(`Local path missing for scan ${scanId}, falling back to legacy image-url processing`);
+        const response = await axios.get(scan.imageUrl, { responseType: 'arraybuffer' });
+        const imageBuffer = Buffer.from(response.data);
+        normalizedData = await this.normalizerService.normalizeImage(imageBuffer);
+        rawTextForStorage = normalizedData.rawText || '';
       }
       
       // Strategy Normalization
