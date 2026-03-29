@@ -4,27 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
-import { useScanStore } from '../store/useScanStore';
+import { useQuery } from '@tanstack/react-query';
+import api from '../utils/api';
 import { Shimmer } from '../components/Shimmer';
-import axios from 'axios';
+import { useScanStore } from '../store/useScanStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const SplitScreen = () => {
-  const { items } = useScanStore();
+  const { items, toggleParticipantAssignment } = useScanStore();
+  const { userId } = useAuthStore();
   const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('equal');
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [participants, setParticipants] = useState<any[]>([
-    { id: 'me', name: 'You', mobile: '', total: 0 },
-  ]);
 
-  useEffect(() => {
-    fetchParticipants();
-  }, []);
-
-  const fetchParticipants = async () => {
-    try {
-      const resp = await axios.get('http://localhost:3000/groups');
-      const allMembers: any[] = [];
+  const { data: participants = [], isLoading: loading } = useQuery({
+    queryKey: ['groups-participants'],
+    queryFn: async () => {
+      const resp = await api.get('/groups');
+      const allMembers: any[] = [{ id: 'me', name: 'You', mobile: '', total: 0 }];
       
       resp.data.forEach((group: any) => {
         group.members.forEach((m: any) => {
@@ -33,29 +29,51 @@ export const SplitScreen = () => {
           }
         });
       });
+      return allMembers;
+    },
+  });
 
-      setParticipants([{ id: 'me', name: 'You', mobile: '', total: 0 }, ...allMembers]);
-    } catch (err) {
-      console.error('Fetch participants failed', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetch current user profile to get real UPI ID
+  const { data: userProfile } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const resp = await api.get(`/users/profile/${userId}`);
+      return resp.data;
+    },
+    enabled: !!userId,
+  });
 
-  const totalAmount = items.reduce((acc, item) => acc + item.price, 0);
+  // Calculate using cents to strictly avoid JS floating point errors
+  const totalCents = items.reduce((acc: number, item: any) => acc + Math.round(item.price * 100), 0);
+  const totalAmount = totalCents / 100;
 
   const calculateShares = () => {
+    if (participants.length === 0) return [];
+    
     if (splitMode === 'equal') {
-      const share = totalAmount / participants.length;
-      return participants.map(p => ({ ...p, share }));
+      // Integer division to avoid 33.3333...
+      const baseShareCents = Math.floor(totalCents / participants.length);
+      let remainderCents = totalCents % participants.length;
+
+      return participants.map((p: any, index: number) => {
+        // Distribute remainder pausas to the first few participants
+        const extraCent = index < remainderCents ? 1 : 0;
+        const finalShare = (baseShareCents + extraCent) / 100;
+        return { ...p, share: finalShare };
+      });
     } else {
       // Itemized
-      return participants.map(p => {
-        const share = items.reduce((acc, i) => {
-          const ap = i.assignedParticipants?.find(ap => ap.participantId === p.id);
-          return acc + (ap ? i.price * ap.share : 0);
+      return participants.map((p: any) => {
+        const shareCents = items.reduce((acc: number, i: any) => {
+          const ap = i.assignedParticipants?.find((ap: any) => ap.participantId === p.id);
+          if (ap) {
+            // Price of item * their fractional share
+            return acc + Math.round((i.price * 100) * ap.share);
+          }
+          return acc;
         }, 0);
-        return { ...p, share };
+        return { ...p, share: shareCents / 100 };
       });
     }
   };
@@ -66,13 +84,16 @@ export const SplitScreen = () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Find assigned items for this member
-    const targetMember = participants.find(p => p.mobile === mobile);
-    const pItems = items.filter(i => 
-      i.assignedParticipants?.some(ap => ap.participantId === targetMember?.id)
+    const targetMember = participants.find((p: any) => p.mobile === mobile);
+    const pItems = items.filter((i: any) => 
+      i.assignedParticipants?.some((ap: any) => ap.participantId === targetMember?.id)
     );
 
-    const itemLines = pItems.map(i => `• ${i.cleanName}: ₹${i.price}`).join('\n');
-    const upiLink = `upi://pay?pa=aravind@upi&pn=VisionBill&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`;
+    const itemLines = pItems.map((i: any) => `• ${i.cleanName}: ₹${i.price}`).join('\n');
+    
+    // Fallback to static if user hasn't set up profile
+    const upiId = userProfile?.upiId || 'aravind@upi'; 
+    const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(userProfile?.name || 'VisionBill')}&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`;
     
     const message = encodeURIComponent(
       `💸 *VisionBill Split Request*\n\n` +
@@ -85,8 +106,6 @@ export const SplitScreen = () => {
     
     Linking.openURL(`whatsapp://send?phone=${mobile}&text=${message}`);
   };
-
-  const { toggleParticipantAssignment } = useScanStore();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -140,8 +159,8 @@ export const SplitScreen = () => {
             horizontal
             data={items}
             keyExtractor={(_, i) => i.toString()}
-            renderItem={({ item, index }) => {
-              const isAssignedToMe = item.assignedParticipants?.some(ap => ap.participantId === selectedParticipantId);
+            renderItem={({ item, index }: any) => {
+              const isAssignedToMe = item.assignedParticipants?.some((ap: any) => ap.participantId === selectedParticipantId);
               const totalAssigned = item.assignedParticipants?.length || 0;
               
               return (
@@ -163,7 +182,7 @@ export const SplitScreen = () => {
                     <View style={styles.indicatorContainer}>
                       <Text style={styles.assignedInitial}>
                         {totalAssigned === 1 
-                          ? participants.find(p => p.id === item.assignedParticipants?.[0].participantId)?.name[0]
+                          ? participants.find((p: any) => p.id === item.assignedParticipants?.[0].participantId)?.name[0]
                           : `+${totalAssigned}`
                         }
                       </Text>

@@ -1,92 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Shimmer } from '../components/Shimmer';
-import axios from 'axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../utils/api';
 import { ErrorView } from '../components/ErrorView';
-
 import { EmptyState } from '../components/EmptyState';
 
 export const GroupsScreen = () => {
-  const [groups, setGroups] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [memberModalVisible, setMemberModalVisible] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberMobile, setNewMemberMobile] = useState('');
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
+  const { data: groups = [], isLoading: loading, isError: error, refetch } = useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const resp = await api.get('/groups');
+      return resp.data;
+    },
+  });
 
-  const fetchGroups = async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const resp = await axios.get('http://localhost:3000/groups');
-      setGroups(resp.data);
-      if (selectedGroup) {
-        const updated = resp.data.find((g: any) => g._id === selectedGroup._id);
-        if (updated) setSelectedGroup(updated);
-      }
-    } catch (err) {
-      console.error('Fetch groups failed', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (error) {
-    return <ErrorView onRetry={fetchGroups} />;
-  }
-
-  const createGroup = async () => {
-    if (!newGroupName) return;
-    setLoading(true);
-    try {
-      await axios.post('http://localhost:3000/groups', { name: newGroupName });
-      fetchGroups();
+  const createMutation = useMutation({
+    mutationFn: (name: string) => api.post('/groups', { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       setModalVisible(false);
       setNewGroupName('');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (err) {
-      console.error('Create group failed', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const addMember = async () => {
-    if (!newMemberName || !newMemberMobile) return;
-    try {
-      await axios.post(`http://localhost:3000/groups/${selectedGroup._id}/members`, {
-        name: newMemberName,
-        mobile: newMemberMobile
-      });
+  const addMemberMutation = useMutation({
+    mutationFn: (data: { groupId: string; name: string; mobile: string }) => 
+      api.post(`/groups/${data.groupId}/members`, { name: data.name, mobile: data.mobile }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
       setNewMemberName('');
       setNewMemberMobile('');
-      fetchGroups();
-    } catch (err) {
-      console.error('Add member failed', err);
-    }
+    },
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: (data: { groupId: string; index: number }) => 
+      api.delete(`/groups/${data.groupId}/members/${data.index}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+
+  if (error) {
+    return <ErrorView onRetry={() => refetch()} />;
+  }
+
+  const handleCreateGroup = () => {
+    if (!newGroupName) return;
+    createMutation.mutate(newGroupName);
   };
 
-  const deleteMember = async (index: number) => {
-    try {
-      await axios.delete(`http://localhost:3000/groups/${selectedGroup._id}/members/${index}`);
-      fetchGroups();
-    } catch (err) {
-      console.error('Delete member failed', err);
-    }
+  const handleAddMember = () => {
+    if (!newMemberName || !newMemberMobile || !selectedGroup) return;
+    addMemberMutation.mutate({ groupId: selectedGroup._id, name: newMemberName, mobile: newMemberMobile });
   };
+
+  const handleDeleteMember = (index: number) => {
+    if (!selectedGroup) return;
+    deleteMemberMutation.mutate({ groupId: selectedGroup._id, index });
+  };
+
+  // Sync selectedGroup when groups update
+  const currentSelectedGroup = groups.find((g: any) => g._id === selectedGroup?._id) || selectedGroup;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,8 +142,16 @@ export const GroupsScreen = () => {
               <Pressable onPress={() => setModalVisible(false)} style={styles.cancelBtn}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={createGroup} style={styles.saveBtn}>
-                <Text style={styles.saveBtnText}>Save</Text>
+              <Pressable 
+                onPress={handleCreateGroup} 
+                style={styles.saveBtn}
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.saveBtnText}>Save</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -166,17 +163,17 @@ export const GroupsScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selectedGroup?.name} Members</Text>
+              <Text style={styles.modalTitle}>{currentSelectedGroup?.name} Members</Text>
               <Pressable onPress={() => setMemberModalVisible(false)}>
                 <Text style={styles.closeText}>✕</Text>
               </Pressable>
             </View>
 
             <View style={styles.memberList}>
-              {selectedGroup?.members.map((m: any, i: number) => (
+              {currentSelectedGroup?.members.map((m: any, i: number) => (
                 <View key={i} style={styles.memberRow}>
                   <Text style={styles.memberName}>{m.name} ({m.mobile})</Text>
-                  <Pressable onPress={() => deleteMember(i)}>
+                  <Pressable onPress={() => handleDeleteMember(i)}>
                     <Text style={{ color: Colors.error, fontSize: 12 }}>Remove</Text>
                   </Pressable>
                 </View>
@@ -199,8 +196,16 @@ export const GroupsScreen = () => {
               value={newMemberMobile}
               onChangeText={setNewMemberMobile}
             />
-            <Pressable onPress={addMember} style={[styles.saveBtn, { marginTop: 16 }]}>
-              <Text style={styles.saveBtnText}>Add to Group</Text>
+            <Pressable 
+              onPress={handleAddMember} 
+              style={[styles.saveBtn, { marginTop: 16 }]}
+              disabled={addMemberMutation.isPending}
+            >
+              {addMemberMutation.isPending ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>Add to Group</Text>
+              )}
             </Pressable>
           </View>
         </View>

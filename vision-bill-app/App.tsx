@@ -34,6 +34,7 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import api from './src/utils/api';
+import { useAuthStore } from './src/store/useAuthStore';
 import { getUserId } from './src/utils/auth';
 
 Notifications.setNotificationHandler({
@@ -174,7 +175,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = React.useState(false);
-  const [isAuthenticated, setIsAuthenticated] = React.useState<boolean | null>(null);
+  const { accessToken, isLoading: isAuthLoading, initialize } = useAuthStore();
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -194,9 +195,8 @@ export default function App() {
       setShowOnboarding(true);
     }
 
-    // Check Auth
-    const token = await AsyncStorage.getItem('vision_bill_access_token');
-    setIsAuthenticated(!!token);
+    // Check Auth via Store
+    await initialize();
   };
 
   const handleFinishOnboarding = async () => {
@@ -204,14 +204,9 @@ export default function App() {
     setShowOnboarding(false);
   };
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-      registerForPushNotificationsAsync();
-    }
-  }, [fontsLoaded]);
+  if (!fontsLoaded || isAuthLoading) return null;
 
-  if (!fontsLoaded || isAuthenticated === null) return null;
+  const isAuthenticated = !!accessToken;
 
   if (showOnboarding) {
     return <OnboardingScreen onFinish={handleFinishOnboarding} />;
@@ -226,6 +221,7 @@ export default function App() {
         <NavigationContainer>
           <StatusBar style="light" />
           <Stack.Navigator
+            initialRouteName={isAuthenticated ? "Main" : "Login"}
             screenOptions={{
               headerShown: false,
             }}

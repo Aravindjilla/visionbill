@@ -1,52 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
-import { getUserId } from '../utils/auth';
 
 export const ProfileScreen = () => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const { userId, clearSession, accessToken } = useAuthStore();
   const [mobile, setMobile] = useState('');
   const [upiId, setUpiId] = useState('');
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const userId = await getUserId();
-      if (!userId) return;
-      
+  const { data: user, isLoading: loading, refetch } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
       const resp = await api.get(`/users/profile/${userId}`);
-      setUser(resp.data);
-      setMobile(resp.data.mobile || '');
-      setUpiId(resp.data.upiId || '');
-    } catch (err) {
-      console.error('Fetch profile failed', err);
-    } finally {
-      setLoading(false);
+      return resp.data;
+    },
+    enabled: !!userId && !!accessToken,
+  });
+
+  // Sync inputs when data arrives
+  React.useEffect(() => {
+    if (user) {
+      setMobile(user.mobile || '');
+      setUpiId(user.upiId || '');
     }
-  };
+  }, [user]);
+
+  const saveMutation = useMutation({
+    mutationFn: (data: { mobile: string; upiId: string }) => 
+      api.post(`/users/profile/${userId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+      Alert.alert('Success', 'Profile updated successfully!');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to update profile.');
+    }
+  });
 
   const handleSave = async () => {
-    setSaving(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      const userId = await getUserId();
-      await api.post(`/users/profile/${userId}`, { mobile, upiId });
-      Alert.alert('Success', 'Profile updated successfully!');
-    } catch (err) {
-      console.error('Save profile failed', err);
-      Alert.alert('Error', 'Failed to update profile.');
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate({ mobile, upiId });
   };
 
   const handleLogout = async () => {
@@ -54,14 +55,22 @@ export const ProfileScreen = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: async () => {
-        setSaving(true);
-        setTimeout(() => {
-          setSaving(false);
-          Alert.alert('Logged out', 'You have been logged out.');
-        }, 1000);
+        await clearSession();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }},
     ]);
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/users/${userId}`),
+    onSuccess: () => {
+      clearSession();
+      Alert.alert('Account Wiped', 'Your data has been permanently deleted.');
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to delete account.');
+    }
+  });
 
   const handleDeleteAccount = async () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -73,18 +82,7 @@ export const ProfileScreen = () => {
         { 
           text: 'Delete Everything', 
           style: 'destructive', 
-          onPress: async () => {
-            setSaving(true);
-            try {
-              const userId = await getUserId();
-              await api.delete(`/users/${userId}`);
-              Alert.alert('Account Wiped', 'Your data has been permanently deleted.');
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete account.');
-            } finally {
-              setSaving(false);
-            }
-          }
+          onPress: () => deleteMutation.mutate()
         },
       ]
     );
@@ -130,28 +128,27 @@ export const ProfileScreen = () => {
         </View>
 
         <Pressable 
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+          style={[styles.saveButton, saveMutation.isPending && styles.saveButtonDisabled]} 
           onPress={handleSave}
-          disabled={saving}
+          disabled={saveMutation.isPending}
         >
-          <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Profile'}</Text>
+          <Text style={styles.saveButtonText}>{saveMutation.isPending ? 'Saving...' : 'Save Profile'}</Text>
         </Pressable>
 
         <View style={styles.dangerZone}>
           <Text style={styles.dangerTitle}>Danger Zone</Text>
           <Pressable 
-            style={[styles.logoutButton, saving && { opacity: 0.5 }]} 
+            style={styles.logoutButton} 
             onPress={handleLogout}
-            disabled={saving}
           >
-            <Text style={styles.logoutText}>{saving ? 'Wait...' : 'Logout Session'}</Text>
+            <Text style={styles.logoutText}>Logout Session</Text>
           </Pressable>
           <Pressable 
-            style={[styles.deleteButton, saving && { opacity: 0.5 }]} 
+            style={[styles.deleteButton, deleteMutation.isPending && { opacity: 0.5 }]} 
             onPress={handleDeleteAccount}
-            disabled={saving}
+            disabled={deleteMutation.isPending}
           >
-            <Text style={styles.deleteText}>{saving ? 'Deleting...' : 'Delete My Account Permanently'}</Text>
+            <Text style={styles.deleteText}>{deleteMutation.isPending ? 'Deleting...' : 'Delete My Account Permanently'}</Text>
           </Pressable>
         </View>
       </ScrollView>

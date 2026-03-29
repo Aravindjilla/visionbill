@@ -6,6 +6,7 @@ import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { saveTokens } from '../utils/auth';
+import { useAuthStore } from '../store/useAuthStore';
 
 export const LoginScreen = ({ navigation }: any) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,9 +16,11 @@ export const LoginScreen = ({ navigation }: any) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     // Simulate real OAuth flow
+    const { setSession } = useAuthStore.getState();
     setTimeout(async () => {
       try {
         await saveTokens('demo-user-123', 'mock-access', 'mock-refresh');
+        setSession('demo-user-123', 'mock-access');
         setIsLoading(false);
         navigation.navigate('Main');
       } catch (err) {
