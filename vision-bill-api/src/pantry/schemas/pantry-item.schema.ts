@@ -28,6 +28,9 @@ export class PantryItem {
 
   @Prop()
   unit?: string;
+
+  @Prop({ index: true })
+  expiresAt?: Date;
 }
 
 export const PantryItemSchema = SchemaFactory.createForClass(PantryItem);

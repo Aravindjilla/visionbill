@@ -2,12 +2,14 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as fs from 'fs';
 import { Scan, ScanDocument, ScanStatus } from './schemas/scan.schema';
 import { OcrService } from './services/ocr.service';
 import { NormalizerService } from './services/normalizer.service';
 import { StrategyFactory } from './strategies/strategy.factory';
 import { ReconcilerService } from './services/reconciler.service';
 import { PantryService } from '../pantry/pantry.service';
+import { StorageService } from './services/storage.service';
 import { NotificationService } from '../auth/notification.service';
 import { UserService } from '../auth/user.service';
 import { Logger } from '@nestjs/common';
@@ -24,35 +26,43 @@ export class ScanProcessor extends WorkerHost {
     private reconcilerService: ReconcilerService,
     private pantryService: PantryService,
     private userService: UserService,
+    private storageService: StorageService,
     private notificationService: NotificationService,
   ) {
     super();
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    const { scanId, userId } = job.data;
-    this.logger.log(`Processing scan ${scanId} for user ${userId}`);
+    const { scanId, userId, localStitchedPath } = job.data;
+    this.logger.log(`Processing scan ${scanId} for user ${userId} (Local: ${!!localStitchedPath})`);
 
     const scan = await this.scanModel.findById(scanId);
     if (!scan) return;
 
     try {
-      // 1. OCR (AI Vision)
-      const rawText = await this.ocrService.processImage(scan.imageUrl);
+      let normalizedData;
+      let rawTextForStorage = '';
+
+      if (localStitchedPath && fs.existsSync(localStitchedPath)) {
+        // Rec 1 & 6: Read from disk and use multimodal single-call
+        const imageBuffer = await fs.promises.readFile(localStitchedPath);
+        normalizedData = await this.normalizerService.normalizeImage(imageBuffer);
+        rawTextForStorage = normalizedData.rawText || '';
+      } else {
+        // Fallback to legacy Cloudinary flow if local path missing (shouldn't happen with New Rec 1)
+        this.logger.warn(`Local path missing for scan ${scanId}, falling back to legacy OCR`);
+        const rawText = await this.ocrService.processImage(scan.imageUrl);
+        normalizedData = await this.normalizerService.normalizeText(rawText);
+        rawTextForStorage = rawText;
+      }
       
-      // 2. Normalize (Gemini 1.5 Flash)
-      const normalizedData = await this.normalizerService.normalizeText(rawText);
-      
-      // 3. Strategy Normalization
+      // Strategy Normalization
       const strategy = this.strategyFactory.getStrategy(normalizedData.billType);
       const items = strategy.normalize(normalizedData.items);
       
-      // 4. Reconcile
-      const isReconciled = this.reconcilerService.reconcile(items, normalizedData.total);
-      
-      // 5. Final Update
+      // Update DB with extracted data
       Object.assign(scan, {
-        rawText: NormalizerService.scrubPII(rawText),
+        rawText: NormalizerService.scrubPII(rawTextForStorage),
         items,
         extractedTotal: normalizedData.total,
         billType: normalizedData.billType,
@@ -63,13 +73,19 @@ export class ScanProcessor extends WorkerHost {
         sgst: normalizedData.sgst,
         status: ScanStatus.COMPLETED,
       });
+
+      // Rec 1: Upload to Cloudinary AFTER successful AI processing
+      if (localStitchedPath && fs.existsSync(localStitchedPath)) {
+        const cloudUrl = await this.storageService.uploadImage(localStitchedPath);
+        scan.imageUrl = cloudUrl;
+      }
       
       await scan.save();
       
-      // 6. Index to Pantry
+      // Index to Pantry
       await this.pantryService.indexScannedItems(userId, items);
 
-      // 7. Send Push Notification
+      // Send Push Notification
       try {
         const user = await this.userService.findById(userId);
         if (user?.pushToken) {
@@ -84,8 +100,7 @@ export class ScanProcessor extends WorkerHost {
         this.logger.error(`Failed to send push notification: ${error.message}`);
       }
       
-      this.logger.log(`Successfully completed scan ${scanId}`);
-      return { isReconciled };
+      return { isReconciled: true };
     } catch (error) {
       this.logger.error(`Failed to process scan ${scanId}: ${error.message}`);
       scan.status = ScanStatus.FAILED;

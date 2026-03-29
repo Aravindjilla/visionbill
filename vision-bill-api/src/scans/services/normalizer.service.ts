@@ -27,69 +27,68 @@ export class NormalizerService {
       .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '****@****.***');
   }
 
-  async normalizeText(rawText: string): Promise<any> {
-    const cleanText = NormalizerService.scrubPII(rawText);
-    
-    if (!this.configService.get<string>('GEMINI_API_KEY') || this.configService.get<string>('GEMINI_API_KEY') === 'mock-gemini-key') {
-      // Return stub for development
+  async normalizeImage(imageBuffer: Buffer): Promise<any> {
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (!apiKey || apiKey === 'mock-gemini-key') {
       return {
+        merchantName: "Stub Bazaar",
         billType: 'grocery',
         items: [
-          { shorthand: 'ORG_TMT_1KG', qty: 1, price: 150.00, category: 'Veggies' },
-          { shorthand: 'MILK_FT_1L', qty: 1, price: 65.00, category: 'Dairy' },
+          { shorthand: 'ORG_TMT_1KG', cleanName: 'Organic Tomatoes 1kg', qty: 1, price: 150.00, category: 'Veggies', unit: 'kg' },
+          { shorthand: 'MILK_FT_1L', cleanName: 'Fresh Whole Milk 1L', qty: 1, price: 65.00, category: 'Dairy', unit: 'l' },
         ],
         total: 215.00,
+        currency: 'INR'
       };
     }
 
-    const prompt = `
-      You are a world-class retail data engineer. Analyze the following OCR raw text from a captured receipt and extract a structured, high-fidelity JSON object.
-      Raw Text:
-      "${cleanText}"
+    const imagePart = {
+      inlineData: {
+        data: imageBuffer.toString('base64'),
+        mimeType: 'image/jpeg',
+      },
+    };
 
+    const prompt = `
+      You are a world-class retail data engineer. Analyze the attached receipt image and extract a structured, high-fidelity JSON object.
+      
       Extraction Requirements:
-      1. Store Identity: Identify the 'storeName' (e.g., 'BigBasket', 'India Mart', 'DMart').
+      1. Store Identity: Identify the 'merchantName' (e.g., 'BigBasket', 'India Mart', 'DMart') and 'merchantAddress'.
       2. Item Normalization: Correct shorthand names to descriptive 'cleanName' (e.g., 'ORGTL_1KG' -> 'Organic Toor Dal 1kg').
       3. Global Categorization: Categorize each item (Veggies, Dairy, Snacks, Beverages, Household, Meat, Personal Care).
       4. Pricing Logic: 
          - Extract 'qty' (number), 'unit' (string like 'kg', 'l', 'pc') for each item.
-         - IMPORTANT: Normalize all weights/volumes to a standard base unit (e.g. convert 500g to 0.5kg, or 500ml to 0.5L) in the 'unit' field so historical price tracking remains consistent.
-         - The 'price' must be the FINAL amount paid for that quantity after all item-specific discounts. Strip out all currency symbols (like $ or ₹) and return a pure float (e.g. 150.50).
-      5. Tax & GST (CRITICAL FOR INDIA): 
-         - Extract 'cgst' and 'sgst' separately if present.
-         - Calculate 'taxTotal' (sum of cgst, sgst, vat, etc.).
-         - Do NOT include taxes in the individual item prices, keep them as a separate total in the JSON root.
-      6. Context Detection: Determine 'billType' ('grocery' or 'restaurant') and identify the 'originalCurrency' code (e.g., 'USD', 'EUR', 'INR'). Output 'currency' strictly as 'INR'.
-      7. Grand Total: Extract the final 'total' amount (inclusive of taxes). Ensure it is in INR.
+         - IMPORTANT: Normalize all weights/volumes to a standard base unit (e.g. convert 500g to 0.5kg, or 500ml to 0.5L) in the 'unit' field.
+         - The 'price' must be the FINAL amount paid for that quantity.
+      5. Tax & GST: Extract 'cgst', 'sgst', and 'taxTotal'.
+      6. Context Detection: Determine 'billType' ('grocery' or 'restaurant') and 'total'. 
+      7. Grand Total: Final 'total' amount inclusive of taxes. Output strictly in INR.
 
-      Return ONLY a pure JSON object with the following structure:
+      Return ONLY a pure JSON object:
       {
         "merchantName": string,
         "merchantAddress": string,
         "billType": "grocery" | "restaurant",
         "currency": "INR",
-        "originalCurrency": string,
         "items": [
           { "shorthand": string, "cleanName": string, "qty": number, "price": number, "category": string, "unit": string }
         ],
         "cgst": number,
         "sgst": number,
         "taxTotal": number,
-        "total": number
+        "total": number,
+        "rawText": string (the full OCR text for lookup)
       }
-
-      Important: Do not include any markdown formatting, backticks, or explanatory text. Return the JSON object directly.
     `;
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.model.generateContent([prompt, imagePart]);
       const response = await result.response;
       const text = response.text();
-      // Clean possible markdown backticks
       const cleanJson = text.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (error) {
-      this.logger.error('Gemini Normalization failed', error instanceof Error ? error.stack : String(error));
+      this.logger.error('Multimodal Gemini failed', error instanceof Error ? error.stack : String(error));
       throw error;
     }
   }

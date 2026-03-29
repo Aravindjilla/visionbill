@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +31,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     
-    user.currentRefreshToken = refreshToken;
+    user.currentRefreshToken = await bcrypt.hash(refreshToken, 10);
     await user.save();
     
     return {
@@ -46,7 +47,8 @@ export class AuthService {
 
   async refresh(userId: string, incomingToken: string) {
     const user = await this.userModel.findById(userId);
-    if (!user || user.currentRefreshToken !== incomingToken) {
+    const isMatch = user && user.currentRefreshToken ? await bcrypt.compare(incomingToken, user.currentRefreshToken) : false;
+    if (!isMatch) {
       throw new Error('Invalid refresh token');
     }
     return this.generateTokens(user);

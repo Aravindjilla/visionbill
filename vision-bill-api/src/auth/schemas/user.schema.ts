@@ -40,6 +40,9 @@ export class User {
 
   @Prop()
   lastLogin?: Date;
+
+  @Prop()
+  currentRefreshToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

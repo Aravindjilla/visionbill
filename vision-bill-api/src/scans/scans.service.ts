@@ -83,23 +83,23 @@ export class ScansService {
     // 1. Image Stitching
     const stitchedPath = await this.stitchingService.stitchImages(imagePaths);
 
-    // 2. Upload to Cloud Storage
-    const cloudUrl = await this.storageService.uploadImage(stitchedPath);
-
-    // 3. Initial Scan Creation (Status: PROCESSING)
+    // 2. Initial Scan Creation (Status: PROCESSING)
+    // We store 'local://' temporarily or just null. Cloud URL will be updated by processor.
     const scan = await this.scanModel.create({
       userId,
-      imageUrl: cloudUrl,
+      imageUrl: 'processing...', 
       status: ScanStatus.PROCESSING,
     });
 
-    // 4. Offload to Background Queue
+    // 3. Offload to Background Queue
+    // We pass the local path so the processor can read from disk (Rec 1)
     await this.scanQueue.add('process-scan', {
       scanId: scan._id,
       userId,
+      localStitchedPath: stitchedPath, 
     });
 
-    // 5. Increment usage count
+    // 4. Increment usage count
     await this.userModel.findByIdAndUpdate(userId, { $inc: { monthlyScanCount: 1 } });
 
     return scan;
