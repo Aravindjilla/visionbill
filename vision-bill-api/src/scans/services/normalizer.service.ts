@@ -41,27 +41,33 @@ export class NormalizerService {
     }
 
     const prompt = `
-      You are a retail receipt expert. Analyze the following OCR raw text and extract an itemized list in JSON format.
+      You are a world-class retail data engineer. Analyze the following OCR raw text from a captured receipt and extract a structured, high-fidelity JSON object.
       Raw Text:
       "${cleanText}"
 
-      Requirements:
-      1. Correct shorthand names to descriptive clean names (e.g., ORG_TMT_1KG -> Organic Tomato 1kg).
-      2. Categorize each item accurately (e.g., Dairy, Veggies, Snacks, Beverages, Household).
-      3. Extract quantity (qty), unit price (price), and unit. Price should be the final price per unit AFTER any item-specific discounts.
-      4. Detect and extract 'Tax', 'Service Charges', or 'VAT' as separate items in the list if they are explicitly mentioned.
-      5. Detect the 'billType' (either 'grocery' or 'restaurant').
-      6. Extract the 'total' amount from the final payment line.
-      7. Handle multi-buy discounts by adjusting the unit price accordingly.
+      Extraction Requirements:
+      1. Store Identity: Identify the 'storeName' (e.g., 'BigBasket', 'StarBazaar', 'Social Offline').
+      2. Item Normalization: Correct shorthand names to descriptive 'cleanName' (e.g., 'ORGTL_1KG' -> 'Organic Toor Dal 1kg').
+      3. Global Categorization: Categorize each item (Veggies, Dairy, Snacks, Beverages, Household, Meat, Personal Care).
+      4. Pricing Logic: 
+         - Extract 'qty' (number), 'unit' (string like 'kg', 'l', 'pc'), and final 'price' (number) for each item.
+         - The 'price' must be the FINAL amount paid for that quantity after all item-specific discounts.
+      5. Tax & Surcharges: Detect and extract 'CGST', 'SGST', 'VAT', or 'Service Charge' as separate items in the list.
+      6. Context Detection: Determine 'billType' ('grocery' or 'restaurant') and 'currency' (e.g., 'INR', 'USD').
+      7. Grand Total: Extract the absolute 'total' amount from the final payment line.
 
-      Return ONLY a JSON object with this structure:
+      Return ONLY a pure JSON object with the following structure:
       {
+        "storeName": string,
         "billType": "grocery" | "restaurant",
+        "currency": string,
         "items": [
-          { "shorthand": string,"qty": number, "price": number, "category": string, "unit": string }
+          { "shorthand": string, "cleanName": string, "qty": number, "price": number, "category": string, "unit": string }
         ],
         "total": number
       }
+
+      Important: Do not include any markdown formatting, backticks, or explanatory text. Return the JSON object directly.
     `;
 
     try {
