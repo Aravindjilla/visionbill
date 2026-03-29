@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { getAccessToken, refreshTokens, clearSession } from './auth';
+import { getAccessToken, refreshTokens } from './auth';
+import { useAuthStore } from '../store/useAuthStore';
 
 const api = axios.create({
   baseURL: 'http://localhost:3000',
@@ -26,8 +27,8 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        await clearSession();
-        // Redirect to login (this would usually be handled by a navigation service or state change)
+        await useAuthStore.getState().clearSession();
+        // Navigation auto-handles via App.tsx listening to store state
         return Promise.reject(refreshError);
       }
     }

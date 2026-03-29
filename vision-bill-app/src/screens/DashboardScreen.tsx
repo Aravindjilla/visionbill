@@ -229,7 +229,7 @@ export const DashboardScreen = () => {
                 <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
               </View>
               <View style={styles.receiptMain}>
-                <Text style={styles.storeName}>{r.storeName || 'New Scan'}</Text>
+                <Text style={styles.storeName} numberOfLines={1} ellipsizeMode="tail">{r.storeName || 'New Scan'}</Text>
                 <Text style={styles.receiptMeta}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
               </View>
               <View style={styles.receiptRight}>

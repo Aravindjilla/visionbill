@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, ViewStyle, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, ViewStyle, Image, ScrollView, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
@@ -27,6 +27,11 @@ export const ScannerScreen = ({ navigation }: any) => {
 
   const takePicture = async () => {
     if (camera) {
+      if (isLongBill && currentImages.length >= 5) {
+        Alert.alert('Max Limit Reached', 'You can only scan up to 5 segments per bill to ensure reliable processing.');
+        return;
+      }
+      
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const photo = await camera.takePictureAsync({ base64: true });
       addImage(photo);

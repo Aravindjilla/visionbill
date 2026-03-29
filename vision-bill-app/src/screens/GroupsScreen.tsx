@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
@@ -66,6 +66,14 @@ export const GroupsScreen = () => {
 
   const handleAddMember = () => {
     if (!newMemberName || !newMemberMobile || !selectedGroup) return;
+    
+    // Enforce unique mobile numbers
+    const isDuplicate = currentSelectedGroup?.members.some((m: any) => m.mobile === newMemberMobile);
+    if (isDuplicate) {
+      Alert.alert('Duplicate Member', 'A member with this mobile number already exists in the group.');
+      return;
+    }
+
     addMemberMutation.mutate({ groupId: selectedGroup._id, name: newMemberName, mobile: newMemberMobile });
   };
 

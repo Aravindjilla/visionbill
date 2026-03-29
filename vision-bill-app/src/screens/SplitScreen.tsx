@@ -177,7 +177,7 @@ export const SplitScreen = () => {
                     isAssignedToMe && styles.itemLabelActive
                   ]}
                 >
-                  <Text style={[styles.itemLabelText, totalAssigned > 0 && styles.itemLabelTextAssigned]}>{item.cleanName}</Text>
+                  <Text style={[styles.itemLabelText, totalAssigned > 0 && styles.itemLabelTextAssigned]} numberOfLines={1} ellipsizeMode="tail">{item.cleanName}</Text>
                   {totalAssigned > 0 && (
                     <View style={styles.indicatorContainer}>
                       <Text style={styles.assignedInitial}>

@@ -85,7 +85,7 @@ export const PantryScreen = () => {
                 <View style={styles.itemMain}>
                   <View style={styles.itemIcon}><Text>{item.category === 'Veggies' ? '🍅' : (item.category === 'Dairy' ? '🥛' : '📦')}</Text></View>
                   <View>
-                    <Text style={styles.itemName}>{item.cleanName}</Text>
+                    <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.cleanName}</Text>
                     <Text style={styles.itemUnit}>{item.unit || 'unit'}</Text>
                   </View>
                 </View>
