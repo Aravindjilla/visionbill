@@ -13,9 +13,28 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 
 import { EmptyState } from '../components/EmptyState';
+import { ExportService } from '../utils/export';
 
 export const DashboardScreen = () => {
   const queryClient = useQueryClient();
+
+  const handleExportCSV = async (receipts: any[]) => {
+    const exportData = receipts.map(r => ({
+      Date: new Date(r.createdAt).toLocaleDateString(),
+      Store: r.storeName || 'Unknown',
+      Items: r.items?.length || 0,
+      Total: r.extractedTotal?.toFixed(2) || 0,
+      Status: r.status
+    }));
+    await ExportService.exportToCSV(exportData, `VisionBill_Export_${Date.now()}`);
+  };
+
+  const handleExportPDF = async (receipts: any[]) => {
+    if (receipts.length === 0) return;
+    const latest = receipts[0];
+    const html = ExportService.generateReceiptHTML(latest);
+    await ExportService.exportToPDF(html, `VisionBill_Receipt_${latest._id}`);
+  };
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard'],
@@ -134,7 +153,17 @@ export const DashboardScreen = () => {
 
         {/* Recent Receipts Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <View style={styles.exportActions}>
+              <Pressable onPress={() => handleExportCSV(recentReceipts)} style={styles.exportBtn}>
+                <Text style={styles.exportBtnText}>📄 CSV</Text>
+              </Pressable>
+              <Pressable onPress={() => handleExportPDF(recentReceipts)} style={styles.exportBtn}>
+                <Text style={styles.exportBtnText}>📑 PDF Latest</Text>
+              </Pressable>
+            </View>
+          </View>
           <Pressable><Text style={styles.viewMore}>See All</Text></Pressable>
         </View>
 
@@ -224,5 +253,8 @@ const styles = StyleSheet.create({
   catValue: { fontFamily: 'Outfit_700Bold', fontSize: 14, color: Colors.primary },
   progressBarBg: { height: 8, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 4 },
+  exportActions: { flexDirection: 'row', marginTop: 8 },
+  exportBtn: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 8 },
+  exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 10, color: Colors.text },
 });
 
