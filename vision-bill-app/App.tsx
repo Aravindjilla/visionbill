@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { AppTourProvider } from './src/components/AppTourProvider';
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -231,25 +232,27 @@ export default function App() {
       persistOptions={{ persister: asyncStoragePersister }}
     >
       <ErrorBoundary>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <Stack.Navigator
-            initialRouteName={isAuthenticated ? "Main" : "Login"}
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="Verification" component={VerificationScreen} />
-            <Stack.Screen name="Split" component={SplitScreen} />
-            <Stack.Screen name="Scanner" component={ScannerScreen} />
-            <Stack.Screen name="LoyaltyWallet" component={LoyaltyWalletScreen} />
-            <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
-            <Stack.Screen name="Settlement" component={SettlementScreen} />
-            <Stack.Screen name="ReceiptHistory" component={ReceiptHistoryScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        <AppTourProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <Stack.Navigator
+              initialRouteName={isAuthenticated ? "Main" : "Login"}
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Main" component={MainTabs} />
+              <Stack.Screen name="Verification" component={VerificationScreen} />
+              <Stack.Screen name="Split" component={SplitScreen} />
+              <Stack.Screen name="Scanner" component={ScannerScreen} />
+              <Stack.Screen name="LoyaltyWallet" component={LoyaltyWalletScreen} />
+              <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+              <Stack.Screen name="Settlement" component={SettlementScreen} />
+              <Stack.Screen name="ReceiptHistory" component={ReceiptHistoryScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </AppTourProvider>
       </ErrorBoundary>
     </PersistQueryClientProvider>
   );

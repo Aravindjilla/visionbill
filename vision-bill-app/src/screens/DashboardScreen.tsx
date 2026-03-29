@@ -22,6 +22,7 @@ import { ExportService } from '../utils/export';
 import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PaywallModal } from '../components/PaywallModal';
+import { TourStep } from '../components/TourStep';
 
 export const DashboardScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
@@ -238,26 +239,30 @@ export const DashboardScreen = ({ navigation }: any) => {
               <Shimmer key={i} width={(width - 40 - 16) / 3} height={90} borderRadius={20} />
             ))
           ) : (
-            stats.map((s, i) => (
-              <GlassCard key={i} style={styles.statCard}>
-                <Text style={[styles.statLabel, { color: theme.textMuted }]}>{s.label}</Text>
-                <Text style={[styles.statValue, { color: theme.text }]}>{s.value}</Text>
-                <Text style={[styles.statChange, { color: s.pos ? theme.success : theme.error }]}>
-                  {s.change}
-                </Text>
-              </GlassCard>
-            ))
+            <TourStep id="stats-card" style={{ flexDirection: 'row', gap: 8 }}>
+              {stats.map((s, i) => (
+                <GlassCard key={i} style={styles.statCard}>
+                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>{s.label}</Text>
+                  <Text style={[styles.statValue, { color: theme.text }]}>{s.value}</Text>
+                  <Text style={[styles.statChange, { color: s.pos ? theme.success : theme.error }]}>
+                    {s.change}
+                  </Text>
+                </GlassCard>
+              ))}
+            </TourStep>
           )}
         </View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <Pressable 
-            style={[styles.actionBtn, { backgroundColor: theme.primary }]}
-            onPress={() => navigation.navigate('Scanner')}
-          >
-            <Text style={[styles.actionBtnText, { color: theme.onPrimary }]}>📸 Scan Now</Text>
-          </Pressable>
+          <TourStep id="scanner-btn" style={{ flex: 1 }}>
+            <Pressable 
+              style={[styles.actionBtn, { backgroundColor: theme.primary }]}
+              onPress={() => navigation.navigate('Scanner')}
+            >
+              <Text style={[styles.actionBtnText, { color: theme.onPrimary }]}>📸 Scan Now</Text>
+            </Pressable>
+          </TourStep>
           <Pressable 
             style={[styles.actionBtn, { backgroundColor: theme.surfaceLight, borderColor: theme.border, borderWidth: 1 }]}
             onPress={pickImageGallery}
@@ -270,9 +275,11 @@ export const DashboardScreen = ({ navigation }: any) => {
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Text style={styles.insightTitle}>Spending Trend</Text>
-            <Pressable onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}>
-              <Text style={styles.viewMore}>View Detail</Text>
-            </Pressable>
+            <TourStep id="pantry-link">
+              <Pressable onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}>
+                <Text style={styles.viewMore}>View Detail</Text>
+              </Pressable>
+            </TourStep>
           </View>
           <View style={styles.chartArea}>
             {loading ? (
