@@ -2,6 +2,7 @@ import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
 import { OnModuleInit, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CACHE_TTL, NOTIFICATION_STRINGS } from '../common/constants';
 import { Job, Queue } from 'bullmq';
 import { PantryItem, PantryItemDocument } from './schemas/pantry-item.schema';
 import { UserService } from '../auth/user.service';
@@ -96,7 +97,7 @@ export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
         const suffix = expiring.length > 3 ? ` +${expiring.length - 3} more` : '';
         await this.notificationService.sendNotification(
           user.pushToken,
-          '⚠️ Items Expiring Soon',
+          NOTIFICATION_STRINGS.ITEMS_EXPIRING,
           preview + suffix,
           { type: 'expiry', items: expiring },
         );

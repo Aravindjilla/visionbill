@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { AUTH_CONFIG } from '../common/constants';
 
 @Injectable()
 export class AuthService {
@@ -28,8 +29,8 @@ export class AuthService {
   async generateTokens(user: UserDocument) {
     const payload = { email: user.email, sub: user._id };
     
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: AUTH_CONFIG.ACCESS_TOKEN_EXPIRES });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: AUTH_CONFIG.REFRESH_TOKEN_EXPIRES });
     
     user.currentRefreshToken = await bcrypt.hash(refreshToken, 10);
     await user.save();

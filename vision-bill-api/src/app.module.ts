@@ -11,6 +11,7 @@ import { GroupsModule } from './groups/groups.module';
 import { PantryModule } from './pantry/pantry.module';
 
 import { BullModule } from '@nestjs/bullmq';
+import { REDIS_CONFIG } from './common/constants';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -26,7 +27,7 @@ import { APP_GUARD } from '@nestjs/core';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+          url: configService.get<string>('REDIS_URL') || REDIS_CONFIG.DEFAULT_URL,
         },
       }),
     }),

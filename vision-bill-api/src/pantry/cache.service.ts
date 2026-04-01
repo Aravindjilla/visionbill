@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { REDIS_CONFIG } from '../common/constants';
 
 @Injectable()
 export class CacheService {
@@ -8,7 +9,7 @@ export class CacheService {
   private readonly logger = new Logger(CacheService.name);
 
   constructor(private configService: ConfigService) {
-    const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+    const redisUrl = this.configService.get<string>('REDIS_URL') || REDIS_CONFIG.DEFAULT_URL;
     this.redis = new Redis(redisUrl, {
       maxRetriesPerRequest: 0,          // fail fast; don't queue commands indefinitely
       enableReadyCheck: false,           // don't block on READY signal

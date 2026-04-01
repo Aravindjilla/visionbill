@@ -10,7 +10,7 @@ import { CacheService } from './cache.service';
 import { UserService } from '../auth/user.service';
 import { NotificationService } from '../auth/notification.service';
 import { BillItemDto } from '../common-types';
-import { SCAN_LIMITS, CACHE_TTL } from '../common/constants';
+import { SCAN_LIMITS, CACHE_TTL, NOTIFICATION_STRINGS, PANTRY_CONFIG } from '../common/constants';
 
 @Injectable()
 export class PantryService {
@@ -217,7 +217,7 @@ export class PantryService {
       for (const { name, prev, next, pct } of spikes) {
         await this.notificationService.sendNotification(
           user.pushToken,
-          '🚨 Price Hike Alert',
+          NOTIFICATION_STRINGS.PRICE_HIKE_ALERT,
           `${name} went up +${pct.toFixed(0)}% (₹${prev} → ₹${next})`,
           { type: 'price_spike', itemName: name, prevPrice: prev, newPrice: next },
         );
@@ -287,9 +287,9 @@ export class PantryService {
       You are a world-class chef. I have the following ingredients in my digital pantry based on receipts I scanned recently:
       [${itemNames}]
 
-      Please suggest 3 different, creative recipes I can make using primarily these ingredients. You can assume I have basic pantry staples like oil, salt, and pepper.
-
-      Return ONLY a pure JSON array containing 3 objects with the following exact structure:
+      Please suggest ${PANTRY_CONFIG.RECIPE_PROMPT_COUNT} different, creative recipes I can make using primarily these ingredients. You can assume I have basic pantry staples like oil, salt, and pepper.
+      
+      Return ONLY a pure JSON array containing ${PANTRY_CONFIG.RECIPE_PROMPT_COUNT} objects with the following exact structure:
       [
         {
           "title": "Recipe Name",

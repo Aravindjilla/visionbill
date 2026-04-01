@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AUTH_CONFIG } from '../common/constants';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 import { PassportModule } from '@nestjs/passport';
@@ -27,7 +28,7 @@ import { NotificationService } from './notification.service';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: AUTH_CONFIG.REFRESH_TOKEN_EXPIRES }, // Default, though service overrides for refresh
       }),
     }),
   ],

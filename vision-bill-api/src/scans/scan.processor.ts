@@ -2,6 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { NOTIFICATION_STRINGS } from '../common/constants';
 import * as fs from 'fs';
 import axios from 'axios';
 import { Scan, ScanDocument, ScanStatus } from './schemas/scan.schema';
@@ -93,8 +94,8 @@ export class ScanProcessor extends WorkerHost {
         if (user?.pushToken) {
           await this.notificationService.sendNotification(
             user.pushToken,
-            'Scan Complete! 🧾',
-            `Processed ${items.length} items. Tap to verify and split.`,
+            NOTIFICATION_STRINGS.SCAN_COMPLETE_TITLE,
+            NOTIFICATION_STRINGS.SCAN_COMPLETE_BODY,
             { scanId }
           );
         }

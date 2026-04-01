@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 import * as fs from 'fs/promises';
+import { STORAGE_CONFIG } from '../../common/constants';
 
 @Injectable()
 export class StorageService {
@@ -33,7 +34,7 @@ export class StorageService {
       try {
         attempt++;
         const result = await cloudinary.uploader.upload(filePath, {
-          folder: 'vision-bill/receipts',
+          folder: STORAGE_CONFIG.RECEIPTS_FOLDER,
           resource_type: 'image',
         });
         

@@ -23,6 +23,7 @@ import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PaywallModal } from '../components/PaywallModal';
 import { TourStep } from '../components/TourStep';
+import { UI_CONFIG } from '../utils/constants';
 
 export const DashboardScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
@@ -100,7 +101,7 @@ export const DashboardScreen = ({ navigation }: any) => {
               await api.delete(`/scans/${id}`);
               setLastDeleted(scanToDelete);
               setUndoVisible(true);
-              setTimeout(() => setUndoVisible(false), 5000); // 5s to undo
+              setTimeout(() => setUndoVisible(false), UI_CONFIG.UNDO_SNACKBAR_DURATION); // Centralized duration
               queryClient.invalidateQueries({ queryKey: ['dashboard'] });
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             } catch (err) {
@@ -226,7 +227,7 @@ export const DashboardScreen = ({ navigation }: any) => {
             {/* Gamification Badges */}
             <View style={styles.gamificationRow}>
               <View style={[styles.badge, { backgroundColor: theme.card, borderColor: theme.border }]}><Text style={styles.badgeEmoji}>🔥</Text><Text style={[styles.badgeText, { color: theme.text }]}>3 Day Streak</Text></View>
-              <View style={[styles.badge, styles.badgeGold, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}><Text style={styles.badgeEmoji}>🏆</Text><Text style={[styles.badgeText, { color: theme.text }]}>Top Saver</Text></View>
+              <View style={[styles.badge, { borderColor: theme.warning, backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}><Text style={styles.badgeEmoji}>🏆</Text><Text style={[styles.badgeText, { color: theme.text }]}>Top Saver</Text></View>
             </View>
 
           </View>
@@ -307,7 +308,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                 const isToday = i === weeklyTrend.length - 1;
                 return (
                   <View key={i} style={styles.chartBarContainer}>
-                    <View style={[styles.chartBar, { height: barHeight, opacity: isToday ? 1 : 0.55 }]} />
+                    <View style={[styles.chartBar, { backgroundColor: theme.primary, height: barHeight, opacity: isToday ? 1 : 0.55 }]} />
                     <Text style={styles.chartDate}>{d.day}</Text>
                   </View>
                 );
@@ -448,8 +449,8 @@ export const DashboardScreen = ({ navigation }: any) => {
             style={[styles.undoSnackbar, { backgroundColor: theme.card, borderColor: theme.border }]}
           >
             <Text style={[styles.undoText, { color: theme.text }]}>Scan moved to trash</Text>
-            <Pressable onPress={handleUndo} style={styles.undoBtn}>
-              <Text style={styles.undoBtnText}>UNDO</Text>
+            <Pressable onPress={handleUndo} style={[styles.undoBtn, { backgroundColor: theme.primary }]}>
+              <Text style={[styles.undoBtnText, { color: theme.onPrimary }]}>UNDO</Text>
             </Pressable>
           </MotiView>
         )}
@@ -458,7 +459,7 @@ export const DashboardScreen = ({ navigation }: any) => {
       {/* Offline Indicator */}
       {offline && (
         <View style={[styles.offlineBar, { backgroundColor: theme.error }]}>
-          <Text style={styles.offlineText}>Offline Mode • Some features limited</Text>
+          <Text style={[styles.offlineText, { color: theme.surface }]}>Offline Mode • Some features limited</Text>
         </View>
       )}
     </SafeAreaView>
@@ -475,7 +476,6 @@ const styles = StyleSheet.create({
   avatarText: { ...Typography.subtitle },
   gamificationRow: { flexDirection: 'row', marginTop: 12 },
   badge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 8, borderWidth: 1 },
-  badgeGold: { borderColor: '#F59E0B' },
   badgeEmoji: { fontSize: 12, marginRight: 4 },
   badgeText: { ...Typography.tiny, fontFamily: 'Inter_600SemiBold' },
   walletBtn: { marginTop: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1 },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   viewMore: { ...Typography.label, textTransform: 'none' },
   chartArea: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120, paddingBottom: 10 },
   chartBarContainer: { alignItems: 'center' },
-  chartBar: { width: 12, borderRadius: 6, backgroundColor: '#6366F1' },
+  chartBar: { width: 12, borderRadius: 6 },
   chartDate: { ...Typography.tiny, marginTop: 10 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.lg, marginBottom: 16 },
   sectionTitle: { ...Typography.h2 },
@@ -525,10 +525,10 @@ const styles = StyleSheet.create({
   savingsGoalText: { ...Typography.captionSemibold, marginTop: 8 },
   undoSnackbar: { position: 'absolute', bottom: 30, left: 20, right: 20, padding: 16, borderRadius: 16, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
   undoText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  undoBtn: { backgroundColor: '#6366F1', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  undoBtnText: { color: '#FFF', fontFamily: 'Inter_800ExtraBold', fontSize: 12 },
+  undoBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  undoBtnText: { fontFamily: 'Inter_800ExtraBold', fontSize: 12 },
   offlineBar: { position: 'absolute', top: 0, left: 0, right: 0, padding: 4, alignItems: 'center' },
-  offlineText: { color: '#FFF', fontSize: 10, fontFamily: 'Inter_700Bold' },
+  offlineText: { fontSize: 10, fontFamily: 'Inter_700Bold' },
   quickActions: { flexDirection: 'row', paddingHorizontal: Spacing.lg, marginBottom: 24, gap: 12 },
   actionBtn: { flex: 1, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   actionBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold' },

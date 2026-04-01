@@ -328,7 +328,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.surface },
   camera: { flex: 1 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'space-between' },
+  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'space-between' },
   ghostContainer: {
     position: 'absolute',
     top: 0,

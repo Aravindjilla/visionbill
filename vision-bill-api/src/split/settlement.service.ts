@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LedgerEntry, LedgerEntryDocument } from './schemas/ledger-entry.schema';
+import { SETTLEMENT_CONFIG } from '../common/constants';
 
 export interface ParticipantEntry {
   name: string;
@@ -61,7 +62,7 @@ export class SettlementService {
           transactionCount: { $sum: 1 },
         },
       },
-      { $match: { $expr: { $gte: [{ $abs: '$netAmount' }, 0.01] } } },
+      { $match: { $expr: { $gte: [{ $abs: '$netAmount' }, SETTLEMENT_CONFIG.MIN_BALANCE] } } },
       {
         $project: {
           _id: 0,
@@ -113,7 +114,7 @@ export class SettlementService {
           counterpartyName: entry.counterpartyName,
           counterpartyMobile,
           amount: settledPart,
-          description: `Partial settlement`,
+          description: SETTLEMENT_CONFIG.PARTIAL_SETTLEMENT_DESC,
           isSettled: true,
           settledAt: new Date(),
         });

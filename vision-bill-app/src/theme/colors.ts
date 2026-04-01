@@ -23,6 +23,7 @@ export const DarkTheme = {
   chart1: '#6366F1',
   chart2: '#10B981',
   accent: '#A855F7',
+  overlay: 'rgba(0,0,0,0.2)',
 };
 
 export const LightTheme = {
@@ -47,6 +48,7 @@ export const LightTheme = {
   chart1: '#4F46E5',
   chart2: '#16A34A',
   accent: '#9333EA',
+  overlay: 'rgba(0,0,0,0.2)',
 };
 
 export const Colors = DarkTheme;
