@@ -35,3 +35,4 @@ export class PantryItem {
 
 export const PantryItemSchema = SchemaFactory.createForClass(PantryItem);
 PantryItemSchema.index({ userId: 1, cleanName: 1 }, { unique: true });
+PantryItemSchema.index({ userId: 1, updatedAt: -1 });

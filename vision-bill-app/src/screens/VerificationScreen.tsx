@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -102,7 +102,7 @@ export const VerificationScreen = ({ navigation }: any) => {
             </View>
           </View>
         )}
-        renderItem={({ item }) => (
+        renderItem={useCallback(({ item }: any) => (
           <ItemCard
             name={item.cleanName}
             qty={item.qty > 1 ? `${item.qty} pcs` : '1 unit'}
@@ -110,9 +110,9 @@ export const VerificationScreen = ({ navigation }: any) => {
             checked={item.checked}
             isSplit={item.isSplit}
             onToggle={() => toggleItem(item.originalIndex)}
-            onPriceChange={(newPrice) => updateItemPrice(item.originalIndex, newPrice)}
+            onPriceChange={(newPrice: number) => updateItemPrice(item.originalIndex, newPrice)}
           />
-        )}
+        ), [toggleItem, updateItemPrice])}
         renderSectionHeader={({ section: { title } }) => (
           <Text style={[styles.sectionHeader, { backgroundColor: theme.surface }]}>{title}</Text>
         )}

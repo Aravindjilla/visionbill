@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { ActivityIndicator } from 'react-native';
 import api from '../utils/api';
 import { useScanStore } from '../store/useScanStore';
 import { Shimmer } from '../components/Shimmer';
@@ -14,13 +15,27 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
   const { setScan } = useScanStore();
   const [search, setSearch] = useState('');
 
-  const { data: receipts = [], isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['scans', 'all'],
-    queryFn: async () => {
-      const resp = await api.get('/scans');
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading, 
+    refetch, 
+    isRefetching 
+  } = useInfiniteQuery({
+    queryKey: ['scans', 'infinite'],
+    queryFn: async ({ pageParam = 1 }) => {
+      const resp = await api.get(`/scans?page=${pageParam}&limit=15`);
       return resp.data;
-    }
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any[], allPages) => {
+      return lastPage.length === 15 ? allPages.length + 1 : undefined;
+    },
   });
+
+  const receipts = data?.pages.flat() || [];
 
   const filtered = receipts.filter((r: any) => 
     (r.merchantName || 'New Scan').toLowerCase().includes(search.toLowerCase())
@@ -61,6 +76,9 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
           keyExtractor={r => r._id}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           contentContainerStyle={{ padding: 20 }}
+          onEndReached={() => hasNextPage && fetchNextPage()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={() => isFetchingNextPage ? <ActivityIndicator size="small" color={theme.primary} style={{ margin: 20 }} /> : null}
           renderItem={({ item: r }) => (
             <Pressable 
               style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}

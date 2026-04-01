@@ -19,8 +19,7 @@
       "bundleIdentifier": "com.aravindjilla.visionbill",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow VisionBill to scan your receipts.",
-        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images.",
-        "NSLocationWhenInUseUsageDescription": "To track your shopping habits by store."
+        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images."
       }
     },
     "android": {

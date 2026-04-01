@@ -7,6 +7,8 @@ import { Spacing } from '../theme/spacing';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
+import { Shimmer } from '../components/Shimmer';
+import { useThemeStore } from '../store/useThemeStore';
 
 export const ProfileScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
@@ -91,7 +93,23 @@ export const ProfileScreen = ({ navigation }: any) => {
     );
   };
 
-  if (loading) return null;
+  const themeStore = useThemeStore();
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]}>
+        <View style={{ padding: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 32 }}>
+            <Shimmer width={80} height={80} borderRadius={40} style={{ marginBottom: 16 }} />
+            <Shimmer width={150} height={24} borderRadius={8} style={{ marginBottom: 8 }} />
+            <Shimmer width={200} height={16} borderRadius={8} />
+          </View>
+          <Shimmer width="100%" height={240} borderRadius={20} style={{ marginBottom: 24 }} />
+          <Shimmer width="100%" height={56} borderRadius={16} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -102,6 +120,29 @@ export const ProfileScreen = ({ navigation }: any) => {
           </View>
           <Text style={styles.userName}>{user?.name || user?.displayName}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
+          <View style={styles.themeRow}>
+            {(['light', 'dark', 'auto'] as const).map((t) => (
+              <Pressable
+                key={t}
+                style={[
+                  styles.themeBtn,
+                  { borderColor: theme.border, backgroundColor: themeStore.theme === t ? theme.primary : theme.surface },
+                ]}
+                onPress={() => {
+                  themeStore.setTheme(t);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <Text style={[styles.themeBtnText, { color: themeStore.theme === t ? theme.onPrimary : theme.text }]}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }]}>
@@ -156,6 +197,13 @@ export const ProfileScreen = ({ navigation }: any) => {
           <Text style={styles.subscriptionsBtnText}>📅 Manage Subscriptions</Text>
         </Pressable>
 
+        <Pressable
+          style={[styles.subscriptionsBtn, { marginTop: 12 }]}
+          onPress={() => navigation.navigate('Privacy')}
+        >
+          <Text style={styles.subscriptionsBtnText}>🛡️ Privacy & Security</Text>
+        </Pressable>
+
         <View style={[styles.dangerZone, { borderTopColor: theme.border }]}>
           <Text style={[styles.dangerTitle, { color: theme.error }]}>Danger Zone</Text>
           <Pressable 
@@ -201,4 +249,7 @@ const styles = StyleSheet.create({
   logoutText: { color: Colors.text, fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   deleteButton: { backgroundColor: 'transparent', padding: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' },
   deleteText: { color: Colors.error, fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  themeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  themeBtn: { flex: 1, padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1 },
+  themeBtnText: { fontFamily: 'Inter_700Bold', fontSize: 13 },
 });

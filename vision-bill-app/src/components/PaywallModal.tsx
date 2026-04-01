@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Colors, useTheme } from '../theme/colors';
 import { Typography } from '../theme/typography';
 import { Spacing } from '../theme/spacing';
@@ -16,13 +16,26 @@ interface PaywallModalProps {
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose, reason = 'manual' }) => {
   const theme = useTheme();
+  const [purchasing, setPurchasing] = React.useState(false);
+
+  const handlePurchase = async () => {
+    setPurchasing(true);
+    // Simulate payment processing journey
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setPurchasing(false);
+    Alert.alert(
+      '✨ Welcome to Pro!',
+      'Your account has been upgraded. You now have unlimited scans and full access to all premium features.',
+      [{ text: 'Start Exploring', onPress: onClose }]
+    );
+  };
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onDismiss={onClose}
+      onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <Pressable style={styles.dismissArea} onPress={onClose} />
@@ -59,8 +72,15 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose, re
               <FeatureItem icon="📄" text="Export to Excel & PDF" theme={theme} />
             </View>
 
-            <Pressable style={[styles.mainBtn, { backgroundColor: theme.primary }]}>
-              <Text style={[styles.mainBtnText, { color: theme.onPrimary }]}>Get Pro for ₹49/month</Text>
+            <Pressable 
+              style={[styles.mainBtn, { backgroundColor: theme.primary }, purchasing && { opacity: 0.7 }]}
+              onPress={handlePurchase}
+              disabled={purchasing}
+            >
+              {purchasing 
+                ? <ActivityIndicator color={theme.onPrimary} />
+                : <Text style={[styles.mainBtnText, { color: theme.onPrimary }]}>Get Pro for ₹49/month</Text>
+              }
             </Pressable>
 
             <Pressable style={styles.secondaryBtn} onPress={onClose}>

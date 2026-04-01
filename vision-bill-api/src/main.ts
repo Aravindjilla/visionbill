@@ -34,6 +34,18 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
   const { AllExceptionsFilter } = require('./common/filters/all-exceptions.filter');
   app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Swagger Documentation Setup
+  const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
+  const config = new DocumentBuilder()
+    .setTitle('VisionBill API')
+    .setDescription('Personal finance tracking via OCR & Gemini AI')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

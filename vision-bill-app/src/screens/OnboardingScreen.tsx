@@ -12,20 +12,20 @@ const SLIDES = [
     id: '1',
     title: 'Precision AI Scanning',
     subtitle: 'Extract every item, quantity, and price from your receipts with near-perfect accuracy using Gemini 1.5 Flash.',
-    lottie: 'https://lottie.host/8e3a2c5f-7f5b-4c4c-8f8a-9e8a7b6c5d4f/scan.json' // Placeholder Lottie
+    lottie: require('../../assets/animations/scan_processing.json'),
   },
   {
     id: '2',
     title: 'Smart Pantry Insights',
     subtitle: 'Automatically track price hikes on your daily staples. Know exactly when your favorite brands get expensive.',
-    lottie: 'https://lottie.host/e660995c-7d5d-4f81-8b2b-6899f8d660e1/p8D960aX8U.json'
+    lottie: require('../../assets/animations/empty_pantry.json'),
   },
   {
     id: '3',
     title: 'Effortless Bill Splitting',
     subtitle: 'Split group expenses in seconds. Generate UPI payment links and WhatsApp-ready summaries for your friends.',
-    lottie: 'https://lottie.host/c5a1735e-c437-4904-ba71-7597feec2c30/split.json'
-  }
+    lottie: require('../../assets/animations/empty_groups.json'),
+  },
 ];
 
 export const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
@@ -54,11 +54,11 @@ export const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
         renderItem={({ item }) => (
           <View style={styles.slide}>
             <View style={styles.lottieWrapper}>
-               <LottieView 
-                 source={{ uri: item.lottie }}
-                 autoPlay 
-                 loop 
-                 style={styles.lottie} 
+               <LottieView
+                 source={item.lottie}
+                 autoPlay
+                 loop
+                 style={styles.lottie}
                />
             </View>
             <View style={styles.textContent}>

@@ -137,14 +137,22 @@ export class ScansService {
         format: 'jpeg',
       });
 
+      if (pageImages.length > PDF_CONFIG.MAX_PAGES) {
+        throw new BadRequestException(`PDF exceeds the maximum of ${PDF_CONFIG.MAX_PAGES} pages.`);
+      }
+
       const tempDir = path.join(process.cwd(), PDF_CONFIG.TEMP_DIR);
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-      for (let i = 0; i < pageImages.length; i++) {
-        const pagePath = path.join(tempDir, `pdf_${Date.now()}_${i}.jpg`);
-        await fs.promises.writeFile(pagePath, pageImages[i]);
-        segmentPaths.push(pagePath);
-      }
+      // Parallelize file writes instead of sequential loop
+      const timestamp = Date.now();
+      const writePaths = pageImages.map((_: any, i: number) =>
+        path.join(tempDir, `pdf_${timestamp}_${i}.jpg`)
+      );
+      await Promise.all(
+        pageImages.map((img: any, i: number) => fs.promises.writeFile(writePaths[i], img))
+      );
+      segmentPaths.push(...writePaths);
 
       const scan = await this._enqueueScan(userId, segmentPaths);
       return { scan, status: 'PDF processing started' };
@@ -152,12 +160,14 @@ export class ScansService {
       this.logger.error(`PDF conversion failed for user ${userId}:`, error.stack);
       throw error;
     } finally {
-      // Guaranteed cleanup of temp files
-      segmentPaths.forEach(p => { 
-        if (fs.existsSync(p)) fs.unlink(p, (err) => {
-          if (err) this.logger.error(`Failed to cleanup temp PDF page: ${p}`, err);
-        }); 
-      });
+      // Parallel cleanup of temp files
+      await Promise.all(
+        segmentPaths.map(p =>
+          fs.promises.unlink(p).catch(err =>
+            this.logger.error(`Failed to cleanup temp PDF page: ${p}`, err)
+          )
+        )
+      );
     }
   }
 
@@ -176,9 +186,11 @@ export class ScansService {
   }
 
   async findAll(userId: string, limit?: number, page = 1): Promise<ScanDocument[]> {
+    const clampedLimit = limit ? Math.min(Math.max(limit, 1), 100) : undefined;
+    const clampedPage = Math.max(page, 1);
     const query = this.scanModel.find({ userId, status: { $ne: ScanStatus.DELETED } }).sort({ createdAt: -1 });
-    if (limit) {
-      query.skip((page - 1) * limit).limit(limit);
+    if (clampedLimit) {
+      query.skip((clampedPage - 1) * clampedLimit).limit(clampedLimit);
     }
     return query.exec();
   }

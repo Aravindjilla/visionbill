@@ -29,7 +29,7 @@ export const DashboardScreen = ({ navigation }: any) => {
   const theme = useTheme();
   const [showAllReceipts, setShowAllReceipts] = useState(false);
   const { setScan, lastDeleted, setLastDeleted } = useScanStore();
-  const { userId, tier, monthlyScanCount } = useAuthStore();
+  const { userId, tier, monthlyScanCount, isLoading: isAuthLoading, accessToken } = useAuthStore();
 
   const [undoVisible, setUndoVisible] = useState(false);
   const [offline, setOffline] = useState(false);
@@ -127,55 +127,64 @@ export const DashboardScreen = ({ navigation }: any) => {
     navigation.navigate('Verification');
   };
 
-  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
-    queryKey: ['dashboard', showAllReceipts],
+  // Stable stats query — does NOT depend on showAllReceipts; won't refetch on receipt list toggle
+  const { data: statsData, isLoading: statsLoading, isError, refetch: refetchStats } = useQuery({
+    queryKey: ['dashboard-stats', userId],
     queryFn: async () => {
-      const scansUrl = showAllReceipts ? '/scans' : '/scans?limit=5';
       const profilePromise = userId ? api.get(`/users/profile/${userId}`).catch(() => ({ data: {} })) : Promise.resolve({ data: {} });
-      const [statsResp, scansResp, trendResp, profileResp] = await Promise.all([
+      const [statsResp, trendResp, profileResp] = await Promise.all([
         api.get('/pantry/stats'),
-        api.get(scansUrl),
         api.get('/pantry/weekly-trend'),
         profilePromise,
       ]);
-
       const trend: { day: string; total: number }[] = trendResp.data;
       const savings: number = statsResp.data.savings || 0;
       const itemCount: number = statsResp.data.itemCount || 0;
       const scansThisWeek = trend.filter(d => d.total > 0).length;
-
-      // Compute week-over-week spending direction from first 3 vs last 3 days of trend
       const first3 = trend.slice(0, 3).reduce((a, d) => a + d.total, 0);
       const last3 = trend.slice(-3).reduce((a, d) => a + d.total, 0);
       const spentChangePct = first3 > 0 ? Math.round(((last3 - first3) / first3) * 100) : 0;
       const spentChangeStr = spentChangePct >= 0 ? `+${spentChangePct}%` : `${spentChangePct}%`;
+      return {
+        stats: [
+          { label: 'Total Spent', value: `₹${statsResp.data.totalSpent?.toFixed(0) || 0}`, change: spentChangeStr, pos: spentChangePct <= 0 },
+          { label: 'Saved', value: `₹${savings.toFixed(0)}`, change: `${Math.min(Math.round(savings / 500 * 100), 100)}% goal`, pos: true },
+          { label: 'Items', value: `${itemCount}`, change: `${scansThisWeek} scans`, pos: true },
+        ],
+        profile: profileResp.data,
+        byCategory: statsResp.data.byCategory || {},
+        weeklyTrend: trend,
+        badges: (statsResp.data.badges || []) as { emoji: string; label: string }[],
+        savingsGoal: profileResp.data.savingsGoal ?? 500,
+      };
+    },
+    enabled: !isAuthLoading && !!accessToken && !!userId,
+  });
 
-        return {
-          stats: [
-            { label: 'Total Spent', value: `₹${statsResp.data.totalSpent?.toFixed(0) || 0}`, change: spentChangeStr, pos: spentChangePct <= 0 },
-            { label: 'Saved', value: `₹${savings.toFixed(0)}`, change: `${Math.min(Math.round(savings / 500 * 100), 100)}% goal`, pos: true },
-            { label: 'Items', value: `${itemCount}`, change: `${scansThisWeek} scans`, pos: true },
-          ],
-          profile: profileResp.data,
-          recentReceipts: scansResp.data,
-          byCategory: statsResp.data.byCategory || {},
-          weeklyTrend: trend,
-          badges: (statsResp.data.badges || []) as { emoji: string; label: string }[],
-          savingsGoal: profileResp.data.savingsGoal ?? 500,
-        };
-      },
-    // Poll every 5s when any scan is still processing (functional form avoids init-order issue)
+  // Scan list query — depends on showAllReceipts toggle; polls only while scans are processing
+  const { data: scansData, isLoading: scansLoading, isRefetching, refetch: refetchScans } = useQuery({
+    queryKey: ['dashboard-scans', showAllReceipts],
+    queryFn: async () => {
+      const scansUrl = showAllReceipts ? '/scans' : '/scans?limit=5';
+      const resp = await api.get(scansUrl);
+      return resp.data as any[];
+    },
+    enabled: !isAuthLoading && !!accessToken && !!userId,
+    // Poll at 10s only while any scan is still processing; avoids battery drain
     refetchInterval: (query) => {
-      const receipts: any[] = query.state.data?.recentReceipts ?? [];
-      return receipts.some(r => r.status === 'processing' || r.status === 'pending') ? 5000 : false;
+      const receipts: any[] = query.state.data ?? [];
+      return receipts.some(r => r.status === 'processing' || r.status === 'pending') ? 10000 : false;
     },
   });
+
+  const refetch = () => { refetchStats(); refetchScans(); };
+  const data = statsData ? { ...statsData, recentReceipts: scansData ?? [] } : undefined;
 
   if (isError) {
     return <ErrorView onRetry={() => refetch()} />;
   }
 
-  const loading = isLoading && !data;
+  const loading = (statsLoading || scansLoading) && !data;
   const refreshing = isRefetching;
   const stats = data?.stats || [];
   const recentReceipts = data?.recentReceipts || [];
@@ -401,11 +410,11 @@ export const DashboardScreen = ({ navigation }: any) => {
             </Pressable>
           ))
         ) : (
-          <EmptyState 
-            icon="🧾" 
-            title="No receipts yet" 
-            subtitle="Scan your first bill to see spending insights and track your items." 
-            lottieUrl="https://lottie.host/8e3172ca-635e-4686-a517-5e6e3cda83bc/X1Ld4A9H6p.json"
+          <EmptyState
+            icon="🧾"
+            title="No receipts yet"
+            subtitle="Scan your first bill to see spending insights and track your items."
+            lottieSource={require('../../assets/animations/empty_receipt.json')}
             actionLabel="Try with Sample Receipt"
             onAction={injectDemoData}
           />

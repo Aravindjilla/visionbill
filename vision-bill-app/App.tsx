@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Pressable, Platform, UIManager } from 'react-na
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +24,7 @@ import { LoyaltyWalletScreen } from './src/screens/LoyaltyWalletScreen';
 import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
 import { SettlementScreen } from './src/screens/SettlementScreen';
 import { ReceiptHistoryScreen } from './src/screens/ReceiptHistoryScreen';
+import { PrivacyScreen } from './src/screens/PrivacyScreen';
 
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -37,10 +38,12 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { AppTourProvider } from './src/components/AppTourProvider';
 
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import api from './src/utils/api';
 import { useAuthStore } from './src/store/useAuthStore';
 import { getUserId } from './src/utils/auth';
+import { Alert } from 'react-native';
+import { registerForPushNotificationsAsync } from './src/utils/notifications';
+
+export const navigationRef = createNavigationContainerRef();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -52,39 +55,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-async function registerForPushNotificationsAsync() {
-  let token;
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      console.error('Failed to get push token for push notification!');
-      return;
-    }
-    token = (await Notifications.getExpoPushTokenAsync()).data;
-    const userId = await getUserId();
-    if (userId) {
-      await api.post(`/users/push-token/${userId}`, { token });
-    }
-  } else {
-    console.warn('Must use physical device for Push Notifications');
-  }
-
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
-    });
-  }
-
-  return token;
-}
+// Notifications.setNotificationHandler logic remains here as it's root configuration
 
 SplashScreen.preventAutoHideAsync();
 
@@ -187,29 +158,80 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 export default function App() {
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const { accessToken, isLoading: isAuthLoading, initialize } = useAuthStore();
+  
+  const notificationListener = React.useRef<any>(null);
+  const responseListener = React.useRef<any>(null);
+
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
+    Inter_400Regular: Inter_400Regular,
+    Inter_600SemiBold: Inter_600SemiBold,
+    Inter_700Bold: Inter_700Bold,
+    Outfit_600SemiBold: Outfit_600SemiBold,
+    Outfit_700Bold: Outfit_700Bold,
   });
 
   useEffect(() => {
-    initializeApp();
+    (async () => {
+      const hasOnboarded = await AsyncStorage.getItem('HAS_ONBOARDED');
+      if (!hasOnboarded) setShowOnboarding(true);
+      await initialize();
+      await registerForPushNotificationsAsync();
+    })();
+  }, []);
+
+  useEffect(() => {
+    // Foreground listener
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      const data = notification.request.content.data;
+      if (data && data.scanId) {
+        Alert.alert(
+          'Scan Complete! 🧾',
+          'Your receipt has been processed. Would you like to view it now?',
+          [
+            { text: 'Later', style: 'cancel' },
+            { 
+              text: 'View Now', 
+              onPress: () => {
+                if (navigationRef.isReady()) {
+                  navigationRef.navigate('Verification' as never);
+                }
+              }
+            }
+          ]
+        );
+      }
+    });
+
+    // Response listener (tray click)
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      
+      if (data && data.scanId) {
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Verification' as never);
+          }
+        }, 500);
+      } else if (data && (data.type === 'price_spike' || data.type === 'expiry')) {
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            (navigationRef as any).navigate('Main', { screen: 'Dashboard' });
+          }
+        }, 500);
+      }
+    });
+
+    return () => {
+      if (notificationListener.current) notificationListener.current.remove();
+      if (responseListener.current) responseListener.current.remove();
+    };
   }, []);
 
   const initializeApp = async () => {
-    // Check Onboarding
     const hasOnboarded = await AsyncStorage.getItem('HAS_ONBOARDED');
-    if (!hasOnboarded) {
-      setShowOnboarding(true);
-    }
+    if (!hasOnboarded) setShowOnboarding(true);
 
-    // Check Auth via Store
     await initialize();
-
-    // Register push notifications after auth is ready
     await registerForPushNotificationsAsync();
   };
 
@@ -233,7 +255,7 @@ export default function App() {
     >
       <ErrorBoundary>
         <AppTourProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <StatusBar style="auto" />
             <Stack.Navigator
               initialRouteName={isAuthenticated ? "Main" : "Login"}
@@ -249,6 +271,7 @@ export default function App() {
               <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
               <Stack.Screen name="Settlement" component={SettlementScreen} />
               <Stack.Screen name="ReceiptHistory" component={ReceiptHistoryScreen} />
+              <Stack.Screen name="Privacy" component={PrivacyScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppTourProvider>

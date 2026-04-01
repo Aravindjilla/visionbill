@@ -8,6 +8,8 @@ import { Typography } from '../theme/typography';
 import { saveTokens } from '../utils/auth';
 import { useAuthStore } from '../store/useAuthStore';
 
+import { registerForPushNotificationsAsync } from '../utils/notifications';
+
 export const LoginScreen = ({ navigation }: any) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,6 +23,10 @@ export const LoginScreen = ({ navigation }: any) => {
       try {
         await saveTokens('demo-user-123', 'mock-access', 'mock-refresh');
         setSession('demo-user-123', 'mock-access');
+        
+        // Sync push token immediately after login
+        await registerForPushNotificationsAsync();
+        
         setIsLoading(false);
         navigation.navigate('Main');
       } catch (err) {

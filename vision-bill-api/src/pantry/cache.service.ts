@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -9,8 +9,12 @@ export class CacheService {
 
   constructor(private configService: ConfigService) {
     const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
-    this.redis = new Redis(redisUrl);
-    
+    this.redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: 0,          // fail fast; don't queue commands indefinitely
+      enableReadyCheck: false,           // don't block on READY signal
+      retryStrategy: (times) => Math.min(times * 100, 3000), // cap at 3s backoff
+    });
+
     this.redis.on('error', (err) => {
       this.logger.error(`Redis connection error: ${err.message}`);
     });

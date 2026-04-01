@@ -30,3 +30,4 @@ export class Group {
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);
+GroupSchema.index({ userId: 1 });

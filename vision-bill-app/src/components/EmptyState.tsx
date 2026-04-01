@@ -8,24 +8,29 @@ interface EmptyStateProps {
   icon: string;
   title: string;
   subtitle: string;
+  /** Prefer this over lottieUrl — pass require('../../assets/animations/file.json') */
+  lottieSource?: any;
+  /** Legacy CDN URL fallback (causes network fetch on every mount — use lottieSource instead) */
   lottieUrl?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, lottieUrl, actionLabel, onAction }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon, title, subtitle, lottieSource, lottieUrl, actionLabel, onAction }) => {
   const theme = useTheme();
   const [lottieError, setLottieError] = useState(false);
+
+  const resolvedSource = lottieSource ?? (lottieUrl ? { uri: lottieUrl } : null);
 
   return (
     <View style={styles.container}>
       <View style={[styles.iconCircle, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        {lottieUrl && !lottieError ? (
-          <LottieView 
-            source={{ uri: lottieUrl }} 
-            autoPlay 
-            loop 
-            style={{ width: 120, height: 120 }} 
+        {resolvedSource && !lottieError ? (
+          <LottieView
+            source={resolvedSource}
+            autoPlay
+            loop
+            style={{ width: 120, height: 120 }}
             onAnimationFailure={() => setLottieError(true)}
           />
         ) : (

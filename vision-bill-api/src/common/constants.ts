@@ -11,11 +11,13 @@ export const SCAN_LIMITS = {
 export const PDF_CONFIG = {
   PAGE_WIDTH: 1080,
   TEMP_DIR: 'uploads/temp_pdf',
+  MAX_PAGES: 30,
 };
 
 export const CACHE_TTL = {
-  STATS: 3600, // 1 hour
-  PANTRY: 3600,
+  STATS: 3600,   // 1 hour
+  PANTRY: 3600,  // 1 hour
+  RECIPES: 86400, // 24 hours — Gemini calls are expensive; invalidated on pantry change
 };
 
 export const FILE_UPLOAD_LIMITS = {

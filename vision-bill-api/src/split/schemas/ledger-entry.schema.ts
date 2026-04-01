@@ -42,4 +42,4 @@ export class LedgerEntry {
 }
 
 export const LedgerEntrySchema = SchemaFactory.createForClass(LedgerEntry);
-LedgerEntrySchema.index({ userId: 1, counterpartyMobile: 1, isSettled: 1 });
+LedgerEntrySchema.index({ userId: 1, counterpartyMobile: 1, isSettled: 1, createdAt: 1 });

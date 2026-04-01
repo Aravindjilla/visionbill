@@ -17,7 +17,7 @@ interface ItemCardProps {
   onPriceChange?: (newPrice: number) => void;
 }
 
-export const ItemCard: React.FC<ItemCardProps> = ({
+export const ItemCard = React.memo<ItemCardProps>(({
   name,
   qty,
   price,
@@ -128,7 +128,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       </MotiView>
     </Pressable>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

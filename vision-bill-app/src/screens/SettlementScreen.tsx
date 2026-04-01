@@ -11,6 +11,7 @@ import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { GlassCard } from '../components/GlassCard';
+import { ErrorView } from '../components/ErrorView';
 
 interface BalanceSummary {
   counterpartyName: string;
@@ -34,10 +35,14 @@ export const SettlementScreen = ({ navigation }: any) => {
   const [settleAmount, setSettleAmount] = useState('');
   const [historyModal, setHistoryModal] = useState<BalanceSummary | null>(null);
 
-  const { data: balances = [], isLoading } = useQuery<BalanceSummary[]>({
+  const { data: balances = [], isLoading, isError, refetch } = useQuery<BalanceSummary[]>({
     queryKey: ['settlement-balances'],
     queryFn: () => api.get('/split/settlement/balances').then(r => r.data),
   });
+
+  if (isError) {
+    return <ErrorView onRetry={() => refetch()} />;
+  }
 
   const { data: history = [], isLoading: historyLoading } = useQuery<HistoryEntry[]>({
     queryKey: ['settlement-history', historyModal?.counterpartyMobile],

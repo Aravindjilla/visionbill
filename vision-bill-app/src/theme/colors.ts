@@ -1,6 +1,8 @@
 import { useColorScheme } from 'react-native';
+import { useThemeStore } from '../store/useThemeStore';
 
 export const DarkTheme = {
+  // ... rest of DarkTheme stays same ...
   primary: '#6366F1',
   onPrimary: '#FFFFFF',
   surface: '#0F1117',
@@ -24,6 +26,7 @@ export const DarkTheme = {
 };
 
 export const LightTheme = {
+  // ... rest of LightTheme stays same ...
   primary: '#4F46E5', // Slightly darker indigo for visibility
   onPrimary: '#FFFFFF',
   surface: '#F8FAFC',
@@ -46,11 +49,13 @@ export const LightTheme = {
   accent: '#9333EA',
 };
 
-// Default export as dynamic object (for simple usage where hooks can't be used)
 export const Colors = DarkTheme;
 
 export const useTheme = () => {
-  const scheme = useColorScheme();
-  return scheme === 'light' ? LightTheme : DarkTheme;
+  const { theme } = useThemeStore();
+  const systemScheme = useColorScheme();
+  
+  const currentTheme = theme === 'auto' ? systemScheme : theme;
+  return currentTheme === 'light' ? LightTheme : DarkTheme;
 };
 

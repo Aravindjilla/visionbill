@@ -4,11 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
-export const PrivacyScreen = ({ onBack }: { onBack: () => void }) => {
+export const PrivacyScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={onBack} style={styles.backBtn}><Text style={styles.backText}>← Back</Text></Pressable>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}><Text style={styles.backText}>← Back</Text></Pressable>
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
       <ScrollView contentContainerStyle={styles.content}>

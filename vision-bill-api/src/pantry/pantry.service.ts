@@ -40,6 +40,9 @@ export class PantryService {
     const existingItems = await this.pantryModel.find({ userId, cleanName: { $in: itemNames } }).exec();
     const existingMap = new Map(existingItems.map(i => [i.cleanName, i]));
 
+    // Collect spike notifications to send after bulkWrite; avoids per-spike user lookups
+    const spikes: { name: string; prev: number; next: number; pct: number }[] = [];
+
     const bulkOps = items.map(item => {
       const existing = existingMap.get(item.cleanName);
       const now = new Date();
@@ -47,7 +50,7 @@ export class PantryService {
       if (existing) {
         const lastEntry = existing.priceHistory[existing.priceHistory.length - 1];
         const isSameDay = lastEntry && new Date(lastEntry.date).toDateString() === now.toDateString();
-        
+
         const updateDoc: any = {
           $set: {
             currentPrice: item.price,
@@ -66,7 +69,7 @@ export class PantryService {
 
           const pct = existing.currentPrice ? ((item.price - existing.currentPrice) / existing.currentPrice) * 100 : 0;
           if (pct > SCAN_LIMITS.PRICE_SPIKE_THRESHOLD_PERCENT) {
-            this.sendSpikeNotification(userId, item.cleanName, existing.currentPrice, item.price, pct);
+            spikes.push({ name: item.cleanName, prev: existing.currentPrice, next: item.price, pct });
           }
         }
 
@@ -97,19 +100,32 @@ export class PantryService {
 
     await this.pantryModel.bulkWrite(bulkOps as any);
 
-    // Invalidate cache
+    // Invalidate all paginated pantry cache entries + stats + recipes for this user
     await Promise.all([
       this.cacheService.del(`stats:${userId}`),
-      this.cacheService.del(`pantry:${userId}`),
+      this.cacheService.del(`recipes:${userId}`),
+      this.cacheService.delByPattern(`pantry:${userId}:*`),
     ]);
+
+    // Single user lookup for all spikes (B13: hoisted out of per-item loop)
+    if (spikes.length > 0) {
+      this.sendSpikeNotifications(userId, spikes);
+    }
   }
 
-  async getPantryItems(userId: string) {
-    const cacheKey = `pantry:${userId}`;
+  async getPantryItems(userId: string, limit = 50, page = 1) {
+    const clampedLimit = Math.min(Math.max(limit, 1), 100);
+    const clampedPage = Math.max(page, 1);
+    const cacheKey = `pantry:${userId}:${clampedLimit}:${clampedPage}`;
     const cached = await this.cacheService.get(cacheKey);
     if (cached) return cached;
 
-    const items = await this.pantryModel.find({ userId }).sort({ updatedAt: -1 }).exec();
+    const items = await this.pantryModel
+      .find({ userId })
+      .sort({ updatedAt: -1 })
+      .skip((clampedPage - 1) * clampedLimit)
+      .limit(clampedLimit)
+      .exec();
     await this.cacheService.set(cacheKey, items, CACHE_TTL.PANTRY);
     return items;
   }
@@ -190,21 +206,20 @@ export class PantryService {
     return stats;
   }
 
-  private async sendSpikeNotification(
+  private async sendSpikeNotifications(
     userId: string,
-    itemName: string,
-    prevPrice: number,
-    newPrice: number,
-    pct: number,
+    spikes: { name: string; prev: number; next: number; pct: number }[],
   ) {
     try {
       const user = await this.userService.findById(userId);
-      if (user?.pushToken) {
+      if (!user?.pushToken) return;
+      // Send one notification per spike (fire-and-forget, single user fetch)
+      for (const { name, prev, next, pct } of spikes) {
         await this.notificationService.sendNotification(
           user.pushToken,
           '🚨 Price Hike Alert',
-          `${itemName} went up +${pct.toFixed(0)}% (₹${prevPrice} → ₹${newPrice})`,
-          { type: 'price_spike', itemName, prevPrice, newPrice },
+          `${name} went up +${pct.toFixed(0)}% (₹${prev} → ₹${next})`,
+          { type: 'price_spike', itemName: name, prevPrice: prev, newPrice: next },
         );
       }
     } catch {
@@ -235,32 +250,34 @@ export class PantryService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const scans = await this.scanModel.find({
-      userId,
-      status: 'completed',
-      createdAt: { $gte: sevenDaysAgo },
-    }).exec();
+    // Use server-side aggregation instead of loading all scan docs into Node memory
+    const grouped = await this.scanModel.aggregate([
+      { $match: { userId, status: 'completed', createdAt: { $gte: sevenDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          total: { $sum: '$extractedTotal' },
+        },
+      },
+    ]).exec();
 
+    const totalsMap = new Map<string, number>(grouped.map((r: any) => [r._id, r.total]));
     const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const result: { day: string; total: number }[] = [];
 
-    for (let i = 6; i >= 0; i--) {
+    return Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
-      d.setDate(d.getDate() - i);
+      d.setDate(d.getDate() - (6 - i));
       d.setHours(0, 0, 0, 0);
-      const dateStr = d.toDateString();
-
-      const dayTotal = scans
-        .filter(s => new Date((s as any).createdAt).toDateString() === dateStr)
-        .reduce((acc, s) => acc + (s.extractedTotal || 0), 0);
-
-      result.push({ day: dayLabels[d.getDay()], total: dayTotal });
-    }
-
-    return result;
+      const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD matches $dateToString format
+      return { day: dayLabels[d.getDay()], total: totalsMap.get(dateStr) || 0 };
+    });
   }
 
   async suggestRecipes(userId: string) {
+    const cacheKey = `recipes:${userId}`;
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) return cached;
+
     const items = await this.pantryModel.find({ userId }).exec();
     if (items.length === 0) return [];
 
@@ -271,7 +288,7 @@ export class PantryService {
       [${itemNames}]
 
       Please suggest 3 different, creative recipes I can make using primarily these ingredients. You can assume I have basic pantry staples like oil, salt, and pepper.
-      
+
       Return ONLY a pure JSON array containing 3 objects with the following exact structure:
       [
         {
@@ -282,24 +299,55 @@ export class PantryService {
           "instructions": ["Step 1...", "Step 2..."]
         }
       ]
-      
+
       Important: Do not include any markdown formatting, backticks, or explanatory text. Return the JSON array directly.
     `;
 
     try {
       if (!this.configService.get<string>('GEMINI_API_KEY') || this.configService.get<string>('GEMINI_API_KEY') === 'mock-gemini-key') {
-         return [
-           { title: "Mock Tomato Soup", time: "15 mins", difficulty: "Easy", ingredients: ["Tomato"], instructions: ["Boil."] }
-         ];
+        const mock = [
+          { title: "Mock Tomato Soup", time: "15 mins", difficulty: "Easy", ingredients: ["Tomato"], instructions: ["Boil."] }
+        ];
+        await this.cacheService.set(cacheKey, mock, CACHE_TTL.RECIPES);
+        return mock;
       }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       const cleanJson = text.replace(/```json|```/g, '').trim();
-      return JSON.parse(cleanJson);
+      const recipes = JSON.parse(cleanJson);
+      await this.cacheService.set(cacheKey, recipes, CACHE_TTL.RECIPES);
+      return recipes;
     } catch (error) {
       this.logger.error('Failed to generate recipes', error);
       return [];
     }
+  }
+
+  async updateItem(userId: string, itemId: string, update: any) {
+    const item = await this.pantryModel.findOneAndUpdate(
+      { _id: itemId, userId },
+      { $set: update, updatedAt: new Date() },
+      { new: true }
+    ).exec();
+    
+    if (item) {
+      await Promise.all([
+        this.cacheService.del(`stats:${userId}`),
+        this.cacheService.delByPattern(`pantry:${userId}:*`),
+      ]);
+    }
+    return item;
+  }
+
+  async deleteItem(userId: string, itemId: string) {
+    const res = await this.pantryModel.deleteOne({ _id: itemId, userId }).exec();
+    if (res.deletedCount > 0) {
+      await Promise.all([
+        this.cacheService.del(`stats:${userId}`),
+        this.cacheService.delByPattern(`pantry:${userId}:*`),
+      ]);
+    }
+    return res;
   }
 }

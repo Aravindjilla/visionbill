@@ -53,19 +53,14 @@ export class StitchingService {
       
       return outputPath;
     } catch (err) {
-      console.error('Stitching failed', err);
       throw err;
     }
   }
 
   private async cleanupSegments(paths: string[]): Promise<void> {
-    for (const p of paths) {
-      try {
-        await fs.unlink(p);
-      } catch (e) {
-        console.warn(`Failed to delete segment file ${p}: ${e.message}`);
-      }
-    }
+    await Promise.all(
+      paths.map(p => fs.unlink(p).catch(() => {}))
+    );
   }
 }
 

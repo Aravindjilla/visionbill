@@ -17,7 +17,9 @@ import { NotificationService } from './notification.service';
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
-      { name: 'Scan', schema: new MongooseSchema({}, { strict: false }) }, // Lazy way to avoid circular scan import for simple delete
+      { name: 'Scan', schema: new MongooseSchema({}, { strict: false }) },
+      { name: 'PantryItem', schema: new MongooseSchema({}, { strict: false }) },
+      { name: 'Group', schema: new MongooseSchema({}, { strict: false }) },
     ]),
     PassportModule.register({ defaultStrategy: 'google' }),
     JwtModule.registerAsync({

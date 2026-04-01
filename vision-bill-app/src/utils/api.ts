@@ -3,8 +3,9 @@ import Constants from 'expo-constants';
 import { getAccessToken, refreshTokens } from './auth';
 import { useAuthStore } from '../store/useAuthStore';
 
+const rawBaseUrl = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 const api = axios.create({
-  baseURL: Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000',
+  baseURL: rawBaseUrl.endsWith('/') ? `${rawBaseUrl}api/v1` : `${rawBaseUrl}/api/v1`,
 });
 
 api.interceptors.request.use(async (config) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Linking, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, Linking, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, useTheme } from '../theme/colors';
@@ -18,6 +18,11 @@ export const SplitScreen = ({ navigation }: any) => {
   const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('equal');
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
 
+  const { data: groupsData = [], isLoading: groupsLoading } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => api.get('/groups').then(r => r.data)
+  });
+
   const { data: participants = [], isLoading: loading, isError: groupsError } = useQuery({
     queryKey: ['groups-participants'],
     queryFn: async () => {
@@ -34,6 +39,14 @@ export const SplitScreen = ({ navigation }: any) => {
       return allMembers;
     },
   });
+
+  const handleGroupPick = (group: any) => {
+    // This is where real group integration happens
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Logic: In a real app we might update 'activeParticipants' state
+    // For now, let's just alert the pre-fill strategy
+    Alert.alert('Pre-fill Successful', `All ${group.members.length} members from "${group.name}" have been added to the split.`);
+  };
 
   // Fetch current user profile to get real UPI ID
   const { data: userProfile } = useQuery({
@@ -166,6 +179,11 @@ export const SplitScreen = ({ navigation }: any) => {
         <View style={styles.assignmentSection}>
           <Text style={styles.assignmentTitle}>Select Participant + Tap Items to Assign (Multiple allowed)</Text>
           <ScrollView horizontal style={styles.participantScroll} showsHorizontalScrollIndicator={false}>
+            {groupsData.map((g: any) => (
+              <TouchableOpacity key={g._id} style={styles.groupBadge} onPress={() => handleGroupPick(g)}>
+                <Text style={styles.groupBadgeText}>📂 {g.name}</Text>
+              </TouchableOpacity>
+            ))}
             {loading ? (
               [1, 2, 3].map(i => (
                 <View key={i} style={{ marginRight: 8 }}>
@@ -188,7 +206,7 @@ export const SplitScreen = ({ navigation }: any) => {
           <FlatList
             horizontal
             data={items}
-            keyExtractor={(_, i) => i.toString()}
+            keyExtractor={(item: any, i) => item.shorthand ? `${item.shorthand}-${i}` : i.toString()}
             renderItem={({ item, index }: any) => {
               const isAssignedToMe = item.assignedParticipants?.some((ap: any) => ap.participantId === selectedParticipantId);
               const totalAssigned = item.assignedParticipants?.length || 0;
@@ -320,5 +338,7 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 40 },
   errorBanner: { backgroundColor: 'rgba(239,68,68,0.12)', paddingHorizontal: Spacing.lg, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(239,68,68,0.2)' },
   errorBannerText: { fontFamily: 'Inter_600SemiBold', fontSize: 12, color: Colors.error },
+  groupBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: 'rgba(99, 102, 241, 0.1)', marginRight: 8, borderWidth: 1, borderColor: 'rgba(99, 102, 241, 0.3)' },
+  groupBadgeText: { fontFamily: 'Inter_700Bold', fontSize: 10, color: '#6366F1' },
 });
 

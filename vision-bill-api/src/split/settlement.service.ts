@@ -47,31 +47,33 @@ export class SettlementService {
 
   /**
    * Returns the net balance for each unique counterparty.
-   * Aggregates all unsettled entries grouped by counterpartyMobile.
+   * Uses a server-side aggregation pipeline to avoid loading all entries into memory.
    */
   async getBalances(userId: string): Promise<BalanceSummary[]> {
-    const entries = await this.ledgerModel
-      .find({ userId, isSettled: false })
-      .exec();
+    const results = await this.ledgerModel.aggregate([
+      { $match: { userId, isSettled: false } },
+      {
+        $group: {
+          _id: '$counterpartyMobile',
+          counterpartyName: { $last: '$counterpartyName' },
+          counterpartyMobile: { $first: '$counterpartyMobile' },
+          netAmount: { $sum: '$amount' },
+          transactionCount: { $sum: 1 },
+        },
+      },
+      { $match: { $expr: { $gte: [{ $abs: '$netAmount' }, 0.01] } } },
+      {
+        $project: {
+          _id: 0,
+          counterpartyName: 1,
+          counterpartyMobile: 1,
+          netAmount: { $round: ['$netAmount', 2] },
+          transactionCount: 1,
+        },
+      },
+    ]).exec();
 
-    const map = new Map<string, BalanceSummary>();
-
-    for (const entry of entries) {
-      const key = entry.counterpartyMobile;
-      if (!map.has(key)) {
-        map.set(key, {
-          counterpartyName: entry.counterpartyName,
-          counterpartyMobile: entry.counterpartyMobile,
-          netAmount: 0,
-          transactionCount: 0,
-        });
-      }
-      const summary = map.get(key)!;
-      summary.netAmount = parseFloat((summary.netAmount + entry.amount).toFixed(2));
-      summary.transactionCount++;
-    }
-
-    return Array.from(map.values()).filter((b) => Math.abs(b.netAmount) >= 0.01);
+    return results as BalanceSummary[];
   }
 
   /**

@@ -130,6 +130,16 @@ export const ScannerScreen = ({ navigation, route }: any) => {
       return;
     }
 
+    // Permission check for Media Library
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      const { status: newStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (newStatus !== 'granted') {
+        Alert.alert('Permission Required', 'We need access to your gallery to pick receipt images.');
+        return;
+      }
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: isLongBill,
@@ -220,7 +230,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
       {loading && (
         <View style={styles.loadingOverlay}>
           <LottieView 
-            source={{ uri: 'https://lottie.host/8e3172ca-635e-4686-a517-5e6e3cda83bc/X1Ld4A9H6p.json' }} 
+            source={require('../../assets/animations/scan_processing.json')} 
             autoPlay 
             loop 
             style={styles.loadingLottie}
@@ -306,6 +316,11 @@ export const ScannerScreen = ({ navigation, route }: any) => {
           </View>
         </View>
       </CameraView>
+      <PaywallModal 
+        visible={paywallVisible} 
+        onClose={() => setPaywallVisible(false)} 
+        reason="limit" 
+      />
     </View>
   );
 };

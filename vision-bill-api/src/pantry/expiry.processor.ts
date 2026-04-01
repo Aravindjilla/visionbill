@@ -50,51 +50,61 @@ export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
     this.logger.log('Running daily expiry check...');
     const now = new Date();
 
-    const allItems = await this.pantryModel.find().exec();
+    // Only load items updated within the maximum possible shelf life window.
+    // Items older than 365 days (Personal Care max) cannot possibly be in the alert window.
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - (Math.max(...Object.values(SHELF_LIFE_DAYS)) + ALERT_DAYS_BEFORE));
 
-    // Group items by userId
-    const byUser: Record<string, PantryItemDocument[]> = {};
+    const allItems = await this.pantryModel
+      .find({ updatedAt: { $gte: cutoff } })
+      .select('userId cleanName category updatedAt')
+      .exec();
+
+    // Group items by userId and compute expiring labels
+    const byUser: Record<string, string[]> = {};
     for (const item of allItems) {
-      const uid = item.userId.toString();
-      if (!byUser[uid]) byUser[uid] = [];
-      byUser[uid].push(item);
+      const shelfDays = SHELF_LIFE_DAYS[item.category] ?? DEFAULT_SHELF_LIFE;
+      const updatedAt = new Date((item as any).updatedAt);
+      const expiresAt = new Date(updatedAt);
+      expiresAt.setDate(expiresAt.getDate() + shelfDays);
+
+      const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
+      if (daysLeft >= 0 && daysLeft <= ALERT_DAYS_BEFORE) {
+        const uid = item.userId.toString();
+        const label = daysLeft === 0 ? 'expires today' : `${daysLeft}d left`;
+        if (!byUser[uid]) byUser[uid] = [];
+        byUser[uid].push(`${item.cleanName} (${label})`);
+      }
     }
 
-    for (const [userId, items] of Object.entries(byUser)) {
-      const expiring: string[] = [];
+    const usersWithExpiry = Object.keys(byUser);
+    if (usersWithExpiry.length === 0) {
+      this.logger.log('Expiry check done. No expiring items found.');
+      return;
+    }
 
-      for (const item of items) {
-        const shelfDays = SHELF_LIFE_DAYS[item.category] ?? DEFAULT_SHELF_LIFE;
-        const updatedAt = new Date((item as any).updatedAt);
-        const expiresAt = new Date(updatedAt);
-        expiresAt.setDate(expiresAt.getDate() + shelfDays);
+    // Batch fetch all users with push tokens in a single query (eliminates N+1)
+    const users = await this.userService.findManyWithPushTokens(usersWithExpiry);
+    const userMap = new Map(users.map(u => [u._id.toString(), u]));
 
-        const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
-        if (daysLeft >= 0 && daysLeft <= ALERT_DAYS_BEFORE) {
-          const label = daysLeft === 0 ? 'expires today' : `${daysLeft}d left`;
-          expiring.push(`${item.cleanName} (${label})`);
-        }
-      }
-
-      if (expiring.length === 0) continue;
+    for (const [userId, expiring] of Object.entries(byUser)) {
+      const user = userMap.get(userId);
+      if (!user?.pushToken) continue;
 
       try {
-        const user = await this.userService.findById(userId);
-        if (user?.pushToken) {
-          const preview = expiring.slice(0, 3).join(', ');
-          const suffix = expiring.length > 3 ? ` +${expiring.length - 3} more` : '';
-          await this.notificationService.sendNotification(
-            user.pushToken,
-            '⚠️ Items Expiring Soon',
-            preview + suffix,
-            { type: 'expiry', items: expiring },
-          );
-        }
+        const preview = expiring.slice(0, 3).join(', ');
+        const suffix = expiring.length > 3 ? ` +${expiring.length - 3} more` : '';
+        await this.notificationService.sendNotification(
+          user.pushToken,
+          '⚠️ Items Expiring Soon',
+          preview + suffix,
+          { type: 'expiry', items: expiring },
+        );
       } catch {
-        // User not found or no push token — skip silently
+        // Non-blocking — skip silently
       }
     }
 
-    this.logger.log(`Expiry check done. Checked ${allItems.length} items across ${Object.keys(byUser).length} users.`);
+    this.logger.log(`Expiry check done. Checked ${allItems.length} items, notified ${usersWithExpiry.length} users.`);
   }
 }
