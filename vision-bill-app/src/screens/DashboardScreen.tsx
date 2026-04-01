@@ -57,7 +57,7 @@ export const DashboardScreen = ({ navigation }: any) => {
   const handleExportCSV = async (receipts: any[]) => {
     const exportData = receipts.map(r => ({
       Date: new Date(r.createdAt).toLocaleDateString(),
-      Store: r.storeName || 'Unknown',
+      Store: r.merchantName || 'Unknown',
       Items: r.items?.length || 0,
       Total: r.extractedTotal?.toFixed(2) || 0,
       Status: r.status
@@ -389,7 +389,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                 <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
               </View>
               <View style={styles.receiptMain}>
-                <Text style={styles.storeName} numberOfLines={1} ellipsizeMode="tail">{r.storeName || 'New Scan'}</Text>
+                <Text style={styles.storeName} numberOfLines={1} ellipsizeMode="tail">{r.merchantName || 'New Scan'}</Text>
                 <Text style={styles.receiptMeta}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
               </View>
               <View style={styles.receiptRight}>

@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { SplitController } from './split.controller';
 import { SplitService } from './split.service';
 import { SettlementService } from './settlement.service';
+import { WhatsappService } from './whatsapp.service';
 import { LedgerEntry, LedgerEntrySchema } from './schemas/ledger-entry.schema';
 
 @Module({
@@ -12,7 +13,7 @@ import { LedgerEntry, LedgerEntrySchema } from './schemas/ledger-entry.schema';
     ]),
   ],
   controllers: [SplitController],
-  providers: [SplitService, SettlementService],
-  exports: [SplitService, SettlementService],
+  providers: [SplitService, SettlementService, WhatsappService],
+  exports: [SplitService, SettlementService, WhatsappService],
 })
 export class SplitModule {}

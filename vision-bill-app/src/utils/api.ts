@@ -1,9 +1,10 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 import { getAccessToken, refreshTokens } from './auth';
 import { useAuthStore } from '../store/useAuthStore';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000',
 });
 
 api.interceptors.request.use(async (config) => {

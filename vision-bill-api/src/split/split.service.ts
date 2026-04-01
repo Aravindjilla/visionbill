@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { WhatsappService } from './services/whatsapp.service';
+import { WhatsappService } from './whatsapp.service';
 
 @Injectable()
 export class SplitService {

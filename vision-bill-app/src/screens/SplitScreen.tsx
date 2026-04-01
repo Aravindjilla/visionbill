@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
 import { Shimmer } from '../components/Shimmer';
 import { useScanStore } from '../store/useScanStore';
@@ -12,6 +12,7 @@ import { useAuthStore } from '../store/useAuthStore';
 
 export const SplitScreen = ({ navigation }: any) => {
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const { items, toggleParticipantAssignment, currentScan } = useScanStore();
   const { userId } = useAuthStore();
   const [splitMode, setSplitMode] = useState<'equal' | 'itemized'>('equal');
@@ -110,7 +111,7 @@ export const SplitScreen = ({ navigation }: any) => {
     try {
       await api.post('/split/settlement/record', {
         participants: [{ name, mobile, amount }],
-        description: `Bill split${currentScan?.storeName ? ` at ${currentScan.storeName}` : ''}`,
+        description: `Bill split${currentScan?.merchantName ? ` at ${currentScan.merchantName}` : ''}`,
         scanId: currentScan?._id,
       });
     } catch {

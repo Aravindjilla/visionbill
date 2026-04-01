@@ -47,7 +47,11 @@ export class AuthService {
 
   async refresh(userId: string, incomingToken: string) {
     const user = await this.userModel.findById(userId);
-    const isMatch = user && user.currentRefreshToken ? await bcrypt.compare(incomingToken, user.currentRefreshToken) : false;
+    if (!user || !user.currentRefreshToken) {
+      throw new Error('Invalid refresh token');
+    }
+
+    const isMatch = await bcrypt.compare(incomingToken, user.currentRefreshToken);
     if (!isMatch) {
       throw new Error('Invalid refresh token');
     }

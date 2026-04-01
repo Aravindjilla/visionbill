@@ -52,7 +52,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
       }
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const photo = await camera.takePictureAsync({ base64: true });
+      const photo = await camera.takePictureAsync({ base64: false });
       addImage(photo);
       
       if (!isLongBill) {
