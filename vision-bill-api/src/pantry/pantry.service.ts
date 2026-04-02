@@ -10,7 +10,7 @@ import { CacheService } from './cache.service';
 import { UserService } from '../auth/user.service';
 import { NotificationService } from '../auth/notification.service';
 import { BillItemDto } from '../common-types';
-import { SCAN_LIMITS, CACHE_TTL, NOTIFICATION_STRINGS, PANTRY_CONFIG } from '../common/constants';
+import { CACHE_TTL, PANTRY_CONFIG, NOTIFICATION_STRINGS, SCAN_LIMITS, GAMIFICATION_THRESHOLDS, HISTORY_LIMITS, GEMINI_CONFIG } from '../common/constants';
 
 @Injectable()
 export class PantryService {
@@ -28,8 +28,8 @@ export class PantryService {
     private notificationService: NotificationService,
   ) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    this.genAI = new GoogleGenerativeAI(apiKey || 'stub-key');
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.genAI = new GoogleGenerativeAI(apiKey || GEMINI_CONFIG.STUB_KEY_FALLBACK);
+    this.model = this.genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL_NAME });
   }
 
   async indexScannedItems(userId: string, items: BillItemDto[]): Promise<void> {
@@ -182,16 +182,16 @@ export class PantryService {
     // Streaks and Badges need recent data
     const recentScans = await this.scanModel.find({ userId, status: 'completed' })
       .sort({ createdAt: -1 })
-      .limit(50) // Limit memory for streak
+      .limit(HISTORY_LIMITS.STREAK_CALCULATION_LOOKBACK) // Limit memory for streak
       .select('createdAt')
       .exec();
 
     const scanStreak = this.computeStreak(recentScans.map(s => (s as any).createdAt));
 
     const badges: { emoji: string; label: string }[] = [];
-    if (scanStreak >= 3) badges.push({ emoji: '🔥', label: `${scanStreak} Day Streak` });
-    if (savings >= 200)  badges.push({ emoji: '🏆', label: 'Top Saver' });
-    if (itemsCount >= 50) badges.push({ emoji: '🥦', label: 'Pantry Master' });
+    if (scanStreak >= GAMIFICATION_THRESHOLDS.STREAK_MIN) badges.push({ emoji: '🔥', label: `${scanStreak} Day Streak` });
+    if (savings >= GAMIFICATION_THRESHOLDS.SAVINGS_MIN)  badges.push({ emoji: '🏆', label: 'Top Saver' });
+    if (itemsCount >= GAMIFICATION_THRESHOLDS.ITEMS_COUNT_MIN) badges.push({ emoji: '🥦', label: 'Pantry Master' });
 
     const stats = {
       totalSpent,

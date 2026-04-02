@@ -6,6 +6,7 @@ import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { saveTokens } from '../utils/auth';
+import { SCREENS } from '../utils/constants';
 import { useAuthStore } from '../store/useAuthStore';
 
 import { registerForPushNotificationsAsync } from '../utils/notifications';
@@ -28,7 +29,7 @@ export const LoginScreen = ({ navigation }: any) => {
         await registerForPushNotificationsAsync();
         
         setIsLoading(false);
-        navigation.navigate('Main');
+        navigation.navigate(SCREENS.MAIN);
       } catch (err) {
         setIsLoading(false);
         console.error('Login failed', err);

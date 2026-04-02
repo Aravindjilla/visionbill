@@ -7,6 +7,7 @@ import { Spacing } from '../theme/spacing';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../utils/api';
+import { SCREENS } from '../utils/constants';
 import { Shimmer } from '../components/Shimmer';
 import { useThemeStore } from '../store/useThemeStore';
 
@@ -192,14 +193,14 @@ export const ProfileScreen = ({ navigation }: any) => {
 
         <Pressable
           style={styles.subscriptionsBtn}
-          onPress={() => navigation.navigate('Subscriptions')}
+          onPress={() => navigation.navigate(SCREENS.SUBSCRIPTIONS)}
         >
           <Text style={styles.subscriptionsBtnText}>📅 Manage Subscriptions</Text>
         </Pressable>
 
         <Pressable
           style={[styles.subscriptionsBtn, { marginTop: 12 }]}
-          onPress={() => navigation.navigate('Privacy')}
+          onPress={() => navigation.navigate(SCREENS.PRIVACY)}
         >
           <Text style={styles.subscriptionsBtnText}>🛡️ Privacy & Security</Text>
         </Pressable>

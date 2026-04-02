@@ -6,6 +6,18 @@ export const SCAN_LIMITS = {
   FREE_TIER_MONTHLY_LIMIT: 5,
   PRICE_HISTORY_COUNT: 10,
   PRICE_SPIKE_THRESHOLD_PERCENT: 15,
+  MAX_SEGMENTS: 5,
+};
+
+export const GEMINI_CONFIG = {
+  MODEL_NAME: 'gemini-1.5-flash',
+  STUB_KEY_FALLBACK: 'stub-key',
+  MOCK_KEY_CHECK: 'mock-gemini-key',
+};
+
+export const IMAGE_CONFIG = {
+  MAX_PIXELS: 100 * 1000 * 1000, // 100 Megapixels
+  JPEG_QUALITY: 80,
 };
 
 export const PDF_CONFIG = {
@@ -51,4 +63,39 @@ export const REDIS_CONFIG = {
 export const AUTH_CONFIG = {
   REFRESH_TOKEN_EXPIRES: '7d' as any,
   ACCESS_TOKEN_EXPIRES: '15m' as any,
+};
+
+export const THROTTLER_CONFIG = {
+  TTL_MS: 60000,
+  LIMIT: 10,
+};
+
+export const SHELF_LIFE_CONFIG = {
+  DAYS_BY_CATEGORY: {
+    Dairy: 3,
+    Veggies: 5,
+    Meat: 2,
+    Beverages: 30,
+    Snacks: 30,
+    Household: 180,
+    'Personal Care': 365,
+  } as Record<string, number>,
+  DEFAULT_SHELF_LIFE: 7,
+  ALERT_DAYS_BEFORE: 2,
+};
+
+export const EXPIRY_CRON = {
+  PATTERN: '0 9 * * *',
+  JOB_ID: 'daily-expiry-check',
+};
+
+export const GAMIFICATION_THRESHOLDS = {
+  STREAK_MIN: 3,
+  SAVINGS_MIN: 200,
+  ITEMS_COUNT_MIN: 50,
+};
+
+export const HISTORY_LIMITS = {
+  SETTLEMENT_HISTORY: 50,
+  STREAK_CALCULATION_LOOKBACK: 50,
 };

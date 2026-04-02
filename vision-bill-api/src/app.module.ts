@@ -11,7 +11,7 @@ import { GroupsModule } from './groups/groups.module';
 import { PantryModule } from './pantry/pantry.module';
 
 import { BullModule } from '@nestjs/bullmq';
-import { REDIS_CONFIG } from './common/constants';
+import { REDIS_CONFIG, THROTTLER_CONFIG } from './common/constants';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -19,8 +19,8 @@ import { APP_GUARD } from '@nestjs/core';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 10,  // tighter for OCR/AI costs
+      ttl: THROTTLER_CONFIG.TTL_MS,
+      limit: THROTTLER_CONFIG.LIMIT,
     }]),
     BullModule.forRootAsync({
       imports: [ConfigModule],

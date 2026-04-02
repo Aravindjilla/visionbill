@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { IMAGE_CONFIG } from '../../common/constants';
 
 @Injectable()
 export class StitchingService {
@@ -20,9 +21,8 @@ export class StitchingService {
     const totalHeight = images.reduce((acc, img) => acc + img.height, 0);
 
     // Performance Audit Guard: Prevent OOM on massive image clusters
-    const MAX_PIXELS = 100 * 1000 * 1000; // 100 Megapixels limit
-    if (maxWidth * totalHeight > MAX_PIXELS) {
-      throw new Error(`Stitching exceeded safety limit of 100MP (${(maxWidth * totalHeight / 1000000).toFixed(1)}MP). Please split into fewer segments.`);
+    if (maxWidth * totalHeight > IMAGE_CONFIG.MAX_PIXELS) {
+      throw new Error(`Stitching exceeded safety limit of ${(IMAGE_CONFIG.MAX_PIXELS / 1000000)}MP (${(maxWidth * totalHeight / 1000000).toFixed(1)}MP). Please split into fewer segments.`);
     }
 
     const outputFileName = `stitched-${Date.now()}.jpg`;
@@ -45,7 +45,7 @@ export class StitchingService {
         },
       })
         .composite(compositeInput)
-        .jpeg({ quality: 80, mozjpeg: true })
+        .jpeg({ quality: IMAGE_CONFIG.JPEG_QUALITY, mozjpeg: true })
         .toFile(outputPath);
 
       // Successfully stitched, now cleanup segments

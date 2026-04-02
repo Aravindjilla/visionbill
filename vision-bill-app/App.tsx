@@ -25,6 +25,7 @@ import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
 import { SettlementScreen } from './src/screens/SettlementScreen';
 import { ReceiptHistoryScreen } from './src/screens/ReceiptHistoryScreen';
 import { PrivacyScreen } from './src/screens/PrivacyScreen';
+import { SCREENS } from './src/utils/constants';
 
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -123,29 +124,29 @@ const MainTabs = () => {
       }}
     >
     <Tab.Screen 
-      name="Dashboard" 
+      name={SCREENS.DASHBOARD} 
       component={DashboardScreen} 
       options={{ tabBarLabel: 'Home', tabBarIcon: () => <Text>🏠</Text> }}
     />
     <Tab.Screen 
-      name="Pantry" 
+      name={SCREENS.PANTRY} 
       component={PantryScreen} 
       options={{ tabBarLabel: 'Pantry', tabBarIcon: () => <Text>📦</Text> }}
     />
     <Tab.Screen 
-      name="Scan" 
+      name={SCREENS.SCAN} 
       component={ScannerScreen} 
       options={{ 
         tabBarButton: (props) => <CustomScanButton {...props} /> 
       }}
     />
     <Tab.Screen 
-      name="Groups" 
+      name={SCREENS.GROUPS} 
       component={GroupsScreen} 
       options={{ tabBarLabel: 'Groups', tabBarIcon: () => <Text>👥</Text> }}
     />
     <Tab.Screen 
-      name="Profile" 
+      name={SCREENS.PROFILE} 
       component={ProfileScreen} 
       options={{ tabBarLabel: 'Profile', tabBarIcon: () => <Text>👤</Text> }}
     />
@@ -215,7 +216,7 @@ export default function App() {
       } else if (data && (data.type === 'price_spike' || data.type === 'expiry')) {
         setTimeout(() => {
           if (navigationRef.isReady()) {
-            (navigationRef as any).navigate('Main', { screen: 'Dashboard' });
+            (navigationRef as any).navigate(SCREENS.MAIN, { screen: SCREENS.DASHBOARD });
           }
         }, 500);
       }
@@ -258,20 +259,20 @@ export default function App() {
           <NavigationContainer ref={navigationRef}>
             <StatusBar style="auto" />
             <Stack.Navigator
-              initialRouteName={isAuthenticated ? "Main" : "Login"}
+              initialRouteName={isAuthenticated ? SCREENS.MAIN : SCREENS.LOGIN}
               screenOptions={{
                 headerShown: false,
               }}
             >
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Main" component={MainTabs} />
-              <Stack.Screen name="Verification" component={VerificationScreen} />
-              <Stack.Screen name="Split" component={SplitScreen} />
-                <Stack.Screen name="LoyaltyWallet" component={LoyaltyWalletScreen} />
-              <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
-              <Stack.Screen name="Settlement" component={SettlementScreen} />
-              <Stack.Screen name="ReceiptHistory" component={ReceiptHistoryScreen} />
-              <Stack.Screen name="Privacy" component={PrivacyScreen} />
+              <Stack.Screen name={SCREENS.LOGIN} component={LoginScreen} />
+              <Stack.Screen name={SCREENS.MAIN} component={MainTabs} />
+              <Stack.Screen name={SCREENS.VERIFICATION} component={VerificationScreen} />
+              <Stack.Screen name={SCREENS.SPLIT} component={SplitScreen} />
+                <Stack.Screen name={SCREENS.LOYALTY_WALLET} component={LoyaltyWalletScreen} />
+              <Stack.Screen name={SCREENS.SUBSCRIPTIONS} component={SubscriptionsScreen} />
+              <Stack.Screen name={SCREENS.SETTLEMENT} component={SettlementScreen} />
+              <Stack.Screen name={SCREENS.RECEIPT_HISTORY} component={ReceiptHistoryScreen} />
+              <Stack.Screen name={SCREENS.PRIVACY} component={PrivacyScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppTourProvider>

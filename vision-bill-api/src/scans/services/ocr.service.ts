@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs/promises';
 import { NormalizerService } from './normalizer.service';
+import { GEMINI_CONFIG } from '../../common/constants';
 
 @Injectable()
 export class OcrService {
@@ -12,14 +13,14 @@ export class OcrService {
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    this.genAI = new GoogleGenerativeAI(apiKey || 'stub-key');
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.genAI = new GoogleGenerativeAI(apiKey || GEMINI_CONFIG.STUB_KEY_FALLBACK);
+    this.model = this.genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL_NAME });
   }
 
   async processImage(imageUrl: string): Promise<string> {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     
-    if (!apiKey || apiKey === 'mock-gemini-key') {
+    if (!apiKey || apiKey === GEMINI_CONFIG.MOCK_KEY_CHECK) {
       this.logger.warn('[OCR] Using stubbed response as Gemini key is mock.');
       return 'RAW RECEIPT TEXT STUB:\nORG_TMT_1KG 150.00\nMILK_FT_1L 65.00\nTOTAL 215.00';
     }

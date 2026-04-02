@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { LedgerEntry, LedgerEntryDocument } from './schemas/ledger-entry.schema';
-import { SETTLEMENT_CONFIG } from '../common/constants';
+import { SETTLEMENT_CONFIG, HISTORY_LIMITS } from '../common/constants';
 
 export interface ParticipantEntry {
   name: string;
@@ -132,7 +132,7 @@ export class SettlementService {
     return this.ledgerModel
       .find({ userId, counterpartyMobile })
       .sort({ createdAt: -1 })
-      .limit(50)
+      .limit(HISTORY_LIMITS.SETTLEMENT_HISTORY)
       .exec();
   }
 }

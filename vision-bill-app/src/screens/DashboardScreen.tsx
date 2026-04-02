@@ -23,7 +23,7 @@ import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PaywallModal } from '../components/PaywallModal';
 import { TourStep } from '../components/TourStep';
-import { UI_CONFIG } from '../utils/constants';
+import { UI_CONFIG, SCREENS } from '../utils/constants';
 
 export const DashboardScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
@@ -51,7 +51,7 @@ export const DashboardScreen = ({ navigation }: any) => {
 
     if (!result.canceled) {
       // Navigate to Scanner with the image to reuse its processing logic
-      navigation.navigate('Scanner', { imageFromGallery: result.assets[0] });
+      navigation.navigate(SCREENS.SCAN, { imageFromGallery: result.assets[0] });
     }
   };
 
@@ -125,7 +125,7 @@ export const DashboardScreen = ({ navigation }: any) => {
   const handleReceiptPress = (scan: any) => {
     if (scan.status !== 'completed') return;
     setScan(scan);
-    navigation.navigate('Verification');
+    navigation.navigate(SCREENS.VERIFICATION);
   };
 
   // Stable stats query — does NOT depend on showAllReceipts; won't refetch on receipt list toggle
@@ -235,7 +235,7 @@ export const DashboardScreen = ({ navigation }: any) => {
             <View style={[styles.avatar, { backgroundColor: theme.primary }]}><Text style={[styles.avatarText, { color: theme.onPrimary }]}>{initials}</Text></View>
             <Pressable 
               style={[styles.walletBtn, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]}
-              onPress={() => navigation.navigate('LoyaltyWallet')}
+              onPress={() => navigation.navigate(SCREENS.LOYALTY_WALLET)}
             >
               <Text style={[styles.walletBtnText, { color: theme.text }]}>💳 Wallet</Text>
             </Pressable>
@@ -268,7 +268,7 @@ export const DashboardScreen = ({ navigation }: any) => {
           <TourStep id="scanner-btn" style={{ flex: 1 }}>
             <Pressable 
               style={[styles.actionBtn, { backgroundColor: theme.primary }]}
-              onPress={() => navigation.navigate('Scanner')}
+              onPress={() => navigation.navigate(SCREENS.SCAN)}
             >
               <Text style={[styles.actionBtnText, { color: theme.onPrimary }]}>📸 Scan Now</Text>
             </Pressable>
@@ -286,7 +286,7 @@ export const DashboardScreen = ({ navigation }: any) => {
           <View style={styles.insightHeader}>
             <Text style={styles.insightTitle}>Spending Trend</Text>
             <TourStep id="pantry-link">
-              <Pressable onPress={() => navigation.navigate('Main', { screen: 'Pantry' })}>
+              <Pressable onPress={() => navigation.navigate(SCREENS.MAIN, { screen: SCREENS.PANTRY })}>
                 <Text style={styles.viewMore}>View Detail</Text>
               </Pressable>
             </TourStep>

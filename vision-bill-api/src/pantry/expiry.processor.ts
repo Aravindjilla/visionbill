@@ -2,23 +2,13 @@ import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
 import { OnModuleInit, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CACHE_TTL, NOTIFICATION_STRINGS } from '../common/constants';
+import { CACHE_TTL, NOTIFICATION_STRINGS, SHELF_LIFE_CONFIG, EXPIRY_CRON } from '../common/constants';
 import { Job, Queue } from 'bullmq';
 import { PantryItem, PantryItemDocument } from './schemas/pantry-item.schema';
 import { UserService } from '../auth/user.service';
 import { NotificationService } from '../auth/notification.service';
 
-const SHELF_LIFE_DAYS: Record<string, number> = {
-  Dairy: 3,
-  Veggies: 5,
-  Meat: 2,
-  Beverages: 30,
-  Snacks: 30,
-  Household: 180,
-  'Personal Care': 365,
-};
-const DEFAULT_SHELF_LIFE = 7;
-const ALERT_DAYS_BEFORE = 2;
+
 
 @Processor('expiry-queue')
 export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
@@ -35,16 +25,16 @@ export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
 
   async onModuleInit() {
     // Remove stale repeatable job before re-adding to avoid duplicates on restart
-    await this.expiryQueue.removeRepeatable('check-expiry', { pattern: '0 9 * * *' }).catch(() => {});
+    await this.expiryQueue.removeRepeatable(EXPIRY_CRON.JOB_ID, { pattern: EXPIRY_CRON.PATTERN }).catch(() => {});
     await this.expiryQueue.add(
-      'check-expiry',
+      EXPIRY_CRON.JOB_ID,
       {},
       {
-        repeat: { pattern: '0 9 * * *' }, // every day at 9 AM
-        jobId: 'daily-expiry-check',
+        repeat: { pattern: EXPIRY_CRON.PATTERN }, // daily at configured time
+        jobId: EXPIRY_CRON.JOB_ID,
       }
     );
-    this.logger.log('Expiry check job scheduled (daily at 9 AM)');
+    this.logger.log(`Expiry check job scheduled (pattern: ${EXPIRY_CRON.PATTERN})`);
   }
 
   async process(job: Job): Promise<void> {
@@ -54,7 +44,8 @@ export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
     // Only load items updated within the maximum possible shelf life window.
     // Items older than 365 days (Personal Care max) cannot possibly be in the alert window.
     const cutoff = new Date(now);
-    cutoff.setDate(cutoff.getDate() - (Math.max(...Object.values(SHELF_LIFE_DAYS)) + ALERT_DAYS_BEFORE));
+    const maxShelfLife = Math.max(...Object.values(SHELF_LIFE_CONFIG.DAYS_BY_CATEGORY));
+    cutoff.setDate(cutoff.getDate() - (maxShelfLife + SHELF_LIFE_CONFIG.ALERT_DAYS_BEFORE));
 
     const allItems = await this.pantryModel
       .find({ updatedAt: { $gte: cutoff } })
@@ -64,13 +55,13 @@ export class ExpiryProcessor extends WorkerHost implements OnModuleInit {
     // Group items by userId and compute expiring labels
     const byUser: Record<string, string[]> = {};
     for (const item of allItems) {
-      const shelfDays = SHELF_LIFE_DAYS[item.category] ?? DEFAULT_SHELF_LIFE;
+      const shelfDays = SHELF_LIFE_CONFIG.DAYS_BY_CATEGORY[item.category] ?? SHELF_LIFE_CONFIG.DEFAULT_SHELF_LIFE;
       const updatedAt = new Date((item as any).updatedAt);
       const expiresAt = new Date(updatedAt);
       expiresAt.setDate(expiresAt.getDate() + shelfDays);
 
       const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
-      if (daysLeft >= 0 && daysLeft <= ALERT_DAYS_BEFORE) {
+      if (daysLeft >= 0 && daysLeft <= SHELF_LIFE_CONFIG.ALERT_DAYS_BEFORE) {
         const uid = item.userId.toString();
         const label = daysLeft === 0 ? 'expires today' : `${daysLeft}d left`;
         if (!byUser[uid]) byUser[uid] = [];

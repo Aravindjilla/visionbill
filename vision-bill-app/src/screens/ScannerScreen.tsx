@@ -7,6 +7,7 @@ import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { useScanStore } from '../store/useScanStore';
+import { SCREENS, SCAN_CONFIG, IMAGE_CONFIG } from '../utils/constants';
 import { useAuthStore } from '../store/useAuthStore';
 import { PaywallModal } from '../components/PaywallModal';
 import { ScanResponse } from '../types';
@@ -46,8 +47,8 @@ export const ScannerScreen = ({ navigation, route }: any) => {
 
   const takePicture = async () => {
     if (camera) {
-      if (isLongBill && currentImages.length >= 5) {
-        Alert.alert('Max Limit Reached', 'You can only scan up to 5 segments per bill to ensure reliable processing.');
+      if (isLongBill && currentImages.length >= SCAN_CONFIG.MAX_SEGMENTS) {
+        Alert.alert('Max Limit Reached', `You can only scan up to ${SCAN_CONFIG.MAX_SEGMENTS} segments per bill to ensure reliable processing.`);
         return;
       }
       
@@ -70,8 +71,8 @@ export const ScannerScreen = ({ navigation, route }: any) => {
         // Optimize image locally before hitting server
         const manipulated = await ImageManipulator.manipulateAsync(
           photos[i].uri,
-          [{ resize: { width: 1080 } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+          [{ resize: { width: IMAGE_CONFIG.RESIZE_WIDTH } }],
+          { compress: IMAGE_CONFIG.COMPRESS_QUALITY, format: ImageManipulator.SaveFormat.JPEG }
         );
 
         formData.append('images', {
@@ -88,7 +89,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
       setScan(response.data.scan);
       clearImages();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.navigate('Verification');
+      navigation.navigate(SCREENS.VERIFICATION);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const message = err?.response?.data?.message || err?.message || 'Scan failed. Using demo data.';

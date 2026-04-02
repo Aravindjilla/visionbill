@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, ScrollView, Animated, Refr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
+import { SCAN_CONFIG } from '../utils/constants';
 import { Shimmer } from '../components/Shimmer';
 import { ErrorView } from '../components/ErrorView';
 import { useQuery } from '@tanstack/react-query';
@@ -65,7 +66,7 @@ export const PantryScreen = () => {
   const isPriceSpike = (item: any) => {
     if (!item.lastPrice) return false;
     const pct = ((item.currentPrice - item.lastPrice) / item.lastPrice) * 100;
-    return pct > 15;
+    return pct > SCAN_CONFIG.PRICE_SPIKE_THRESHOLD;
   };
 
   const renderTrendIcon = (tendency: string) => {

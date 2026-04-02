@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GEMINI_CONFIG } from '../../common/constants';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
 @Injectable()
@@ -10,8 +11,8 @@ export class NormalizerService {
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    this.genAI = new GoogleGenerativeAI(apiKey || 'stub-key');
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.genAI = new GoogleGenerativeAI(apiKey || GEMINI_CONFIG.STUB_KEY_FALLBACK);
+    this.model = this.genAI.getGenerativeModel({ model: GEMINI_CONFIG.MODEL_NAME });
   }
 
   static scrubPII(text: string): string {
@@ -29,7 +30,7 @@ export class NormalizerService {
 
   async normalizeImage(imageBuffer: Buffer): Promise<any> {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (!apiKey || apiKey === 'mock-gemini-key') {
+    if (!apiKey || apiKey === GEMINI_CONFIG.MOCK_KEY_CHECK) {
       return {
         merchantName: "Stub Bazaar",
         billType: 'grocery',
