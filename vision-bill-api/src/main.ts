@@ -27,7 +27,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS
       ? process.env.ALLOWED_ORIGINS.split(',')
-      : false,
+      : ['https://visionbill.vercel.app', 'http://localhost:8081'],
     credentials: true,
   });
   app.setGlobalPrefix('api');
