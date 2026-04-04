@@ -118,7 +118,7 @@ export const DashboardScreen = ({ navigation }: any) => {
       await api.post('/scans/demo-seed');
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     } catch (err) {
-      console.error(err);
+      if (__DEV__) console.error(err);
     }
   };
 

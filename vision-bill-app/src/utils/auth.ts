@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import Constants from 'expo-constants';
 
 const ACCESS_TOKEN_KEY = 'vision_bill_access_token';
 const REFRESH_TOKEN_KEY = 'vision_bill_refresh_token';
@@ -30,7 +31,8 @@ export const refreshTokens = async () => {
 
     if (!userId || !refreshToken) throw new Error('Missing session info');
 
-    const resp = await axios.post('http://localhost:3000/auth/refresh', {
+    const apiUrl = Constants.expoConfig?.extra?.apiUrl ?? 'http://localhost:3000';
+    const resp = await axios.post(`${apiUrl}/auth/refresh`, {
       userId,
       refreshToken,
     });
@@ -39,7 +41,7 @@ export const refreshTokens = async () => {
     await saveTokens(userId, newAccess, newRefresh);
     return newAccess;
   } catch (error) {
-    console.error('Refresh token failed', error);
+    if (__DEV__) console.error('Refresh token failed', error);
     await clearSession();
     throw error;
   }

@@ -2,6 +2,7 @@
   "expo": {
     "name": "VisionBill",
     "slug": "visionbill",
+    "scheme": "visionbill",
     "version": "1.0.0",
     "description": "AI-Powered Smart Receipt Scanner and Shared Pantry Tracker",
     "orientation": "portrait",
@@ -19,12 +20,16 @@
       "bundleIdentifier": "com.aravindjilla.visionbill",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow VisionBill to scan your receipts.",
-        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images."
+        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
       }
     },
     "android": {
       "package": "com.aravindjilla.visionbill",
       "versionCode": 2,
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -42,7 +47,11 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://localhost:3000"
-    }
+      "apiUrl": "http://localhost:3000",
+      "googleClientId": ""
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

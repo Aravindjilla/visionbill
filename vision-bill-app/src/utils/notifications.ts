@@ -15,24 +15,23 @@ export async function registerForPushNotificationsAsync() {
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      console.warn('Failed to get push token for push notification!');
+      if (__DEV__) console.warn('Failed to get push token for push notification!');
       return null;
     }
-    
+
     // Use projectId for newer expo-notifications
     token = (await Notifications.getExpoPushTokenAsync()).data;
-    
+
     const userId = await getUserId();
     if (userId) {
       try {
         await api.post(`/users/push-token/${userId}`, { token });
-        console.log('Successfully synced push token with backend');
-      } catch (err) {
-        console.error('Failed to sync push token with backend', err);
+      } catch {
+        // Push token sync failure is non-fatal; notifications will work on next launch
       }
     }
   } else {
-    console.warn('Must use physical device for Push Notifications');
+    if (__DEV__) console.warn('Must use physical device for Push Notifications');
   }
 
   if (Platform.OS === 'android') {

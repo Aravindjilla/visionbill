@@ -1,41 +1,67 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { saveTokens } from '../utils/auth';
 import { SCREENS } from '../utils/constants';
 import { useAuthStore } from '../store/useAuthStore';
-
 import { registerForPushNotificationsAsync } from '../utils/notifications';
 
+WebBrowser.maybeCompleteAuthSession();
+
 export const LoginScreen = ({ navigation }: any) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl ?? 'http://localhost:3000';
+  const googleClientId = Constants.expoConfig?.extra?.googleClientId ?? '';
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: googleClientId,
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      handleGoogleToken(id_token);
+    } else if (response?.type === 'error') {
+      Alert.alert('Sign-in failed', 'Google authentication was cancelled or failed. Please try again.');
+    }
+  }, [response]);
+
+  const handleGoogleToken = async (idToken: string) => {
+    const { setSession } = useAuthStore.getState();
+    try {
+      const res = await fetch(`${apiUrl}/auth/google-mobile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!res.ok) throw new Error('Authentication failed');
+
+      const data = await res.json();
+      const { accessToken, refreshToken, user } = data;
+
+      await saveTokens(String(user.id), accessToken, refreshToken);
+      setSession(String(user.id), accessToken, user.tier ?? 'free');
+
+      await registerForPushNotificationsAsync();
+      navigation.navigate(SCREENS.MAIN);
+    } catch {
+      Alert.alert('Sign-in failed', 'Could not complete sign-in. Please try again.');
+    }
+  };
 
   const handleLogin = async () => {
-    setIsLoading(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    // Simulate real OAuth flow
-    const { setSession } = useAuthStore.getState();
-    setTimeout(async () => {
-      try {
-        await saveTokens('demo-user-123', 'mock-access', 'mock-refresh');
-        setSession('demo-user-123', 'mock-access');
-        
-        // Sync push token immediately after login
-        await registerForPushNotificationsAsync();
-        
-        setIsLoading(false);
-        navigation.navigate(SCREENS.MAIN);
-      } catch (err) {
-        setIsLoading(false);
-        console.error('Login failed', err);
-      }
-    }, 1500);
+    await promptAsync();
   };
+
+  const isLoading = !request;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -48,7 +74,7 @@ export const LoginScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.footer}>
-        <Pressable 
+        <Pressable
           style={[styles.googleButton, isLoading && { opacity: 0.8 }]}
           disabled={isLoading}
           onPress={handleLogin}
@@ -121,7 +147,7 @@ const styles = StyleSheet.create({
   googleButtonText: {
     ...Typography.bodyBold,
     fontSize: 18,
-    color: '#000', // Keep black for Google brand consistency
+    color: '#000',
   },
   googleIconCircle: {
     width: 28,

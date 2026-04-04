@@ -108,8 +108,8 @@ export const SplitScreen = ({ navigation }: any) => {
 
     const upiId = userProfile?.upiId;
     const upiLine = upiId
-      ? `⚡ *Pay instantly:* upi://pay?pa=${upiId}&pn=${encodeURIComponent(userProfile?.name || 'VisionBill')}&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`
-      : `💡 *Set up your UPI ID in VisionBill Profile to enable one-tap payments*`;
+      ? `⚡ *Pay instantly via UPI:* upi://pay?pa=${upiId}&pn=${encodeURIComponent(userProfile?.name || 'VisionBill')}&am=${amount.toFixed(2)}&cu=INR&tn=VisionBill%20Split`
+      : `💡 *Add your UPI ID in Profile to get paid instantly!*`;
 
     const message = encodeURIComponent(
       `💸 *VisionBill Split Request*\n\n` +
