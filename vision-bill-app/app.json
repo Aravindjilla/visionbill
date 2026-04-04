@@ -47,7 +47,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://localhost:3000",
+      "apiUrl": "https://visionbill.vercel.app",
       "googleClientId": ""
     },
     "plugins": [
