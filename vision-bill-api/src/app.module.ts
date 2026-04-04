@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import * as Joi from 'joi';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { HealthController } from './health.controller';
@@ -17,7 +18,18 @@ import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: Joi.object({
+        JWT_SECRET:     Joi.string().required(),
+        MONGODB_URI:    Joi.string().required(),
+        REDIS_URL:      Joi.string().required(),
+        GEMINI_API_KEY: Joi.string().required(),
+        CLOUDINARY_URL: Joi.string().required(),
+        PORT:           Joi.number().default(3000),
+        NODE_ENV:       Joi.string().valid('development', 'production', 'test').default('development'),
+      }),
+    }),
     ThrottlerModule.forRoot([{
       ttl: THROTTLER_CONFIG.TTL_MS,
       limit: THROTTLER_CONFIG.LIMIT,
@@ -44,6 +56,10 @@ import { APP_GUARD } from '@nestjs/core';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 10,
+        socketTimeoutMS: 45000,
+        autoIndex: configService.get('NODE_ENV') !== 'production',
       }),
     }),
   ],

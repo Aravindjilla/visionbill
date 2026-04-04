@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as path from 'path';
@@ -46,7 +46,10 @@ export class ScansService {
     return this.sessionModel.create({ userId });
   }
 
-  async addSegmentToSession(sessionId: string, filePath: string): Promise<ScanSessionDocument> {
+  async addSegmentToSession(sessionId: string, filePath: string, userId: string): Promise<ScanSessionDocument> {
+    const session = await this.sessionModel.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    if (String(session.userId) !== userId) throw new ForbiddenException();
     return (await this.sessionModel.findByIdAndUpdate(
       sessionId,
       { $push: { segmentPaths: filePath } },
@@ -54,9 +57,10 @@ export class ScansService {
     ))!;
   }
 
-  async finalizeSession(sessionId: string): Promise<ScanResponseDto> {
+  async finalizeSession(sessionId: string, userId: string): Promise<ScanResponseDto> {
     const session = await this.sessionModel.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
+    if (String(session.userId) !== userId) throw new ForbiddenException();
     if (session.isFinalized) throw new BadRequestException('Session already finalized');
     
     const files = session.segmentPaths.map(p => ({ path: p } as Express.Multer.File));
@@ -97,6 +101,14 @@ export class ScansService {
       scanId: scan._id,
       userId,
       localStitchedPath: stitchedPath, 
+    }, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+      removeOnComplete: 100, // Keep last 100 successful jobs for debugging
+      removeOnFail: 500,     // Keep last 500 failed jobs for debugging
     });
 
     // 4. Increment usage count
@@ -171,18 +183,25 @@ export class ScansService {
     }
   }
 
-  async findById(id: string): Promise<ScanDocument> {
+  async findById(id: string, userId: string): Promise<ScanDocument> {
     const scan = await this.scanModel.findById(id).exec();
     if (!scan) throw new NotFoundException('Scan not found');
+    if (String(scan.userId) !== userId) throw new ForbiddenException();
     return scan;
   }
 
-  async remove(id: string): Promise<ScanDocument> {
-    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.DELETED }))!;
+  async remove(id: string, userId: string): Promise<ScanDocument> {
+    const scan = await this.scanModel.findById(id).exec();
+    if (!scan) throw new NotFoundException('Scan not found');
+    if (String(scan.userId) !== userId) throw new ForbiddenException();
+    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.DELETED }, { new: true }))!;
   }
 
-  async restore(id: string): Promise<ScanDocument> {
-    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.COMPLETED }))!;
+  async restore(id: string, userId: string): Promise<ScanDocument> {
+    const scan = await this.scanModel.findById(id).exec();
+    if (!scan) throw new NotFoundException('Scan not found');
+    if (String(scan.userId) !== userId) throw new ForbiddenException();
+    return (await this.scanModel.findByIdAndUpdate(id, { status: ScanStatus.COMPLETED }, { new: true }))!;
   }
 
   async findAll(userId: string, limit?: number, page = 1): Promise<ScanDocument[]> {
@@ -195,7 +214,10 @@ export class ScansService {
     return query.exec();
   }
 
-  async updateItems(id: string, items: any[]): Promise<ScanDocument> {
+  async updateItems(id: string, items: any[], userId: string): Promise<ScanDocument> {
+    const scan = await this.scanModel.findById(id).exec();
+    if (!scan) throw new NotFoundException('Scan not found');
+    if (String(scan.userId) !== userId) throw new ForbiddenException();
     const total = items.reduce((acc, item) => acc + (item.price || 0), 0);
     return (await this.scanModel
       .findByIdAndUpdate(

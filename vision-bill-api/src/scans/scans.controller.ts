@@ -31,12 +31,12 @@ export class ScansController {
 
   @Post('demo-seed')
   async demoSeed(@Req() req: AuthenticatedRequest) {
-    return this.scansService.demoSeed(req.user.sub);
+    return this.scansService.demoSeed(req.user.userId);
   }
 
   @Post('session/init')
   async initSession(@Req() req: AuthenticatedRequest) {
-    return this.scansService.createSession(req.user.sub);
+    return this.scansService.createSession(req.user.userId);
   }
 
   @Post('session/:id/segment')
@@ -44,13 +44,13 @@ export class ScansController {
     limits: MULTER_UPLOAD_LIMITS,
     fileFilter: IMAGE_FILE_FILTER,
   }))
-  async uploadSegment(@Param('id') sessionId: string, @UploadedFile() file: Express.Multer.File) {
-    return this.scansService.addSegmentToSession(sessionId, file.path);
+  async uploadSegment(@Param('id') sessionId: string, @UploadedFile() file: Express.Multer.File, @Req() req: AuthenticatedRequest) {
+    return this.scansService.addSegmentToSession(sessionId, file.path, req.user.userId);
   }
 
   @Post('session/:id/finalize')
-  async finalizeSession(@Param('id') sessionId: string) {
-    return this.scansService.finalizeSession(sessionId);
+  async finalizeSession(@Param('id') sessionId: string, @Req() req: AuthenticatedRequest) {
+    return this.scansService.finalizeSession(sessionId, req.user.userId);
   }
 
   @Post('upload')
@@ -59,7 +59,7 @@ export class ScansController {
     fileFilter: IMAGE_FILE_FILTER,
   }))
   async uploadScan(@UploadedFiles() files: Express.Multer.File[], @Req() req: AuthenticatedRequest) {
-    return this.scansService.createScan(req.user.sub, files);
+    return this.scansService.createScan(req.user.userId, files);
   }
 
   @Post('upload-pdf')
@@ -68,7 +68,7 @@ export class ScansController {
     fileFilter: PDF_FILE_FILTER,
   }))
   async uploadPdf(@UploadedFile() file: Express.Multer.File, @Req() req: AuthenticatedRequest) {
-    return this.scansService.processPdfScan(req.user.sub, file);
+    return this.scansService.processPdfScan(req.user.userId, file);
   }
 
   @Get()
@@ -78,29 +78,29 @@ export class ScansController {
     @Query('page') page?: string,
   ) {
     return this.scansService.findAll(
-      req.user.sub,
+      req.user.userId,
       limit ? parseInt(limit, 10) : undefined,
       page ? parseInt(page, 10) : 1,
     );
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.scansService.findById(id);
+  async findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.scansService.findById(id, req.user.userId);
   }
 
   @Patch(':id/items')
-  async updateItems(@Param('id') id: string, @Body() body: UpdateItemsDto) {
-    return this.scansService.updateItems(id, body.items);
+  async updateItems(@Param('id') id: string, @Body() body: UpdateItemsDto, @Req() req: AuthenticatedRequest) {
+    return this.scansService.updateItems(id, body.items, req.user.userId);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.scansService.remove(id);
+  async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.scansService.remove(id, req.user.userId);
   }
 
   @Post(':id/restore')
-  async restore(@Param('id') id: string) {
-    return this.scansService.restore(id);
+  async restore(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.scansService.restore(id, req.user.userId);
   }
 }

@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "vercel-build": "npm run build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -38,8 +39,10 @@
     "cloudinary": "^2.9.0",
     "dotenv": "^17.3.1",
     "expo-server-sdk": "^6.1.0",
+    "google-auth-library": "^10.6.2",
     "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
+    "joi": "^18.1.2",
     "mongoose": "^9.3.3",
     "multer": "^2.1.1",
     "nest-winston": "^1.10.2",

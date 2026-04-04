@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Body, Query, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SplitService } from './split.service';
 import { SettlementService, ParticipantEntry } from './settlement.service';
 
 @Controller('split')
+@UseGuards(JwtAuthGuard)
 export class SplitController {
   constructor(
     private splitService: SplitService,
@@ -30,7 +32,7 @@ export class SplitController {
       scanId?: string;
     },
   ) {
-    const userId = req.user?.userId || 'demo-user-id';
+    const userId = req.user.userId;
     return this.settlementService.recordExpense(
       userId,
       body.participants,
@@ -41,7 +43,7 @@ export class SplitController {
 
   @Get('settlement/balances')
   async getBalances(@Request() req: any) {
-    const userId = req.user?.userId || 'demo-user-id';
+    const userId = req.user.userId;
     return this.settlementService.getBalances(userId);
   }
 
@@ -50,7 +52,7 @@ export class SplitController {
     @Request() req: any,
     @Body() body: { counterpartyMobile: string; amount: number },
   ) {
-    const userId = req.user?.userId || 'demo-user-id';
+    const userId = req.user.userId;
     return this.settlementService.settle(userId, body.counterpartyMobile, body.amount);
   }
 
@@ -59,7 +61,7 @@ export class SplitController {
     @Request() req: any,
     @Query('mobile') mobile: string,
   ) {
-    const userId = req.user?.userId || 'demo-user-id';
+    const userId = req.user.userId;
     return this.settlementService.getHistory(userId, mobile);
   }
 }

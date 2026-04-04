@@ -1,6 +1,12 @@
-import { Controller, Get, Req, UseGuards, Res, Post, Body } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, Res, Post, Body, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
+import { RefreshDto } from './dto/refresh.dto';
+import { IsString, IsNotEmpty } from 'class-validator';
+
+class GoogleMobileDto {
+  @IsString() @IsNotEmpty() idToken: string;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -18,8 +24,13 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(@Body('userId') userId: string, @Body('refreshToken') refreshToken: string) {
-    return this.authService.refresh(userId, refreshToken);
+  async refresh(@Body() body: RefreshDto) {
+    return this.authService.refresh(body.userId, body.refreshToken);
+  }
+
+  @Post('google-mobile')
+  async googleMobile(@Body() body: GoogleMobileDto) {
+    return this.authService.validateGoogleIdToken(body.idToken);
   }
 
   @Get('status')

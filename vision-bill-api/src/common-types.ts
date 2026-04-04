@@ -5,7 +5,7 @@ import { Type } from 'class-transformer';
 
 export interface AuthenticatedRequest extends Request {
   user: {
-    sub: string;
+    userId: string;
     email: string;
   };
 }

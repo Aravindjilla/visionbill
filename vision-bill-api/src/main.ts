@@ -8,7 +8,7 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: true,
+    // Removed open CORS for security hardening
     logger: WinstonModule.createLogger({
       transports: [
         new winston.transports.Console({
@@ -24,7 +24,12 @@ async function bootstrap() {
   });
 
   app.use(helmet());
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : false,
+    credentials: true,
+  });
   app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
@@ -35,16 +40,18 @@ async function bootstrap() {
   const { AllExceptionsFilter } = require('./common/filters/all-exceptions.filter');
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // Swagger Documentation Setup
-  const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
-  const config = new DocumentBuilder()
-    .setTitle('VisionBill API')
-    .setDescription('Personal finance tracking via OCR & Gemini AI')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger Documentation — non-production only
+  if (process.env.NODE_ENV !== 'production') {
+    const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
+    const config = new DocumentBuilder()
+      .setTitle('VisionBill API')
+      .setDescription('Personal finance tracking via OCR & Gemini AI')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   await app.listen(process.env.PORT ?? 3000);
 }

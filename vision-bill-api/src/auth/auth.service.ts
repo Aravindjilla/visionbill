@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import { AUTH_CONFIG } from '../common/constants';
 
 @Injectable()
@@ -46,15 +47,34 @@ export class AuthService {
     };
   }
 
+  async validateGoogleIdToken(idToken: string) {
+    const client = new OAuth2Client();
+    try {
+      const ticket = await client.verifyIdToken({ idToken });
+      const payload = ticket.getPayload();
+      if (!payload?.email) throw new BadRequestException('Invalid Google ID token');
+
+      const userDetails = {
+        email: payload.email,
+        displayName: payload.name ?? payload.email,
+        avatar: payload.picture ?? '',
+        googleId: payload.sub,
+      };
+      return this.validateUser(userDetails);
+    } catch {
+      throw new UnauthorizedException('Google ID token verification failed');
+    }
+  }
+
   async refresh(userId: string, incomingToken: string) {
     const user = await this.userModel.findById(userId);
     if (!user || !user.currentRefreshToken) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const isMatch = await bcrypt.compare(incomingToken, user.currentRefreshToken);
     if (!isMatch) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
     return this.generateTokens(user);
   }

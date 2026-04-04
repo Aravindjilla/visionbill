@@ -11,6 +11,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 import { NotificationService } from './notification.service';
 
@@ -33,7 +34,7 @@ import { NotificationService } from './notification.service';
     }),
   ],
   controllers: [AuthController, UserController],
-  providers: [AuthService, UserService, NotificationService, GoogleStrategy],
+  providers: [AuthService, UserService, NotificationService, GoogleStrategy, JwtStrategy],
   exports: [AuthService, UserService, NotificationService],
 })
 export class AuthModule {}

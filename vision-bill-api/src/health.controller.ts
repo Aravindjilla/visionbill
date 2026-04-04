@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -11,8 +11,19 @@ export class HealthController {
     @InjectQueue('scan-queue') private readonly scanQueue: Queue,
   ) {}
 
-  @Get()
-  async check() {
+  /**
+   * Liveness probe: Process is running
+   */
+  @Get('live')
+  async live() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  /**
+   * Readiness probe: Dependencies are up
+   */
+  @Get('ready')
+  async ready() {
     const mongoStatus = this.connection.readyState === 1 ? 'up' : 'down';
     
     let redisStatus = 'down';
@@ -24,13 +35,25 @@ export class HealthController {
       redisStatus = 'down';
     }
 
-    return {
-      status: mongoStatus === 'up' && redisStatus === 'up' ? 'ok' : 'error',
+    const isHealthy = mongoStatus === 'up' && redisStatus === 'up';
+
+    const result = {
+      status: isHealthy ? 'ok' : 'error',
       details: {
         mongodb: mongoStatus,
         redis: redisStatus,
       },
       timestamp: new Date().toISOString(),
     };
+
+    if (!isHealthy) {
+      throw new ServiceUnavailableException(result);
+    }
+    return result;
+  }
+
+  @Get()
+  async check() {
+    return this.ready();
   }
 }
