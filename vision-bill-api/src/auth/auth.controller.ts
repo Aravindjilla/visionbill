@@ -1,5 +1,6 @@
 import { Controller, Get, Req, UseGuards, Res, Post, Body, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RefreshDto } from './dto/refresh.dto';
 import { IsString, IsNotEmpty } from 'class-validator';
@@ -24,11 +25,17 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(@Body() body: RefreshDto) {
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(AuthGuard('jwt'))
+  async refresh(@Req() req: any, @Body() body: RefreshDto) {
+    if (req.user.sub !== body.userId) {
+      throw new BadRequestException('Unauthorized refresh attempt');
+    }
     return this.authService.refresh(body.userId, body.refreshToken);
   }
 
   @Post('google-mobile')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async googleMobile(@Body() body: GoogleMobileDto) {
     return this.authService.validateGoogleIdToken(body.idToken);
   }
