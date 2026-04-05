@@ -15,11 +15,12 @@ import {
   Smartphone,
   ShieldCheck, 
   Zap,
-  Download,
   Menu,
   X,
   Plus,
-  ChevronDown
+  ChevronDown,
+  Star,
+  Quote
 } from 'lucide-react';
 
 // --- Components ---
@@ -87,7 +88,7 @@ const SectionHeading = ({ title, subtitle, badge }: { title: string, subtitle: s
   </div>
 );
 
-const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right', index }: any) => {
+const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right' }: any) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: false, amount: 0.3 });
 
@@ -226,26 +227,49 @@ const App = () => {
         <SectionHeading 
           badge="Our Mission"
           title="From paper waste to digital wisdom."
-          subtitle="We didn't just build a scanner. We built a bridge between your physical purchases and your digital future. Every grocery run is a piece of your financial puzzle—we just help you put it together."
+          subtitle="We didn't just build a scanner. We built a bridge between your physical purchases and your digital future."
         />
+
+        {/* Live Interactive Demo Section */}
+        <section className="mb-40">
+           <div className="grid md:grid-cols-2 gap-20 items-center">
+              <div className="relative group">
+                 <div className="absolute -inset-10 bg-primary/20 blur-[100px] rounded-full group-hover:bg-primary/30 transition-all opacity-0 group-hover:opacity-100" />
+                 <motion.div 
+                   whileHover={{ scale: 1.02 }}
+                   className="glass rounded-[2.5rem] p-1 border-white/10"
+                 >
+                    <LiveDemo />
+                 </motion.div>
+              </div>
+              <div>
+                 <MotiBadge text="Try the Magic" />
+                 <h3 className="text-4xl md:text-5xl font-outfit font-black mb-8 leading-tight">Seeing is believing.</h3>
+                 <p className="text-xl text-white/40 leading-relaxed mb-10">
+                    Interact with our live preview to see how VisionBill itemizes a chaotic grocery receipt into a structured digital record in under 2 seconds.
+                 </p>
+                 <div className="flex flex-col gap-6">
+                    <BenefitRow icon={<Zap className="text-yellow-400" />} text="99% OCR accuracy on handwritten or faded bills." />
+                    <BenefitRow icon={<ShieldCheck className="text-blue-400" />} text="Privacy first: Extraction happens in secure cloud isolated from your personal ID." />
+                 </div>
+              </div>
+           </div>
+        </section>
 
         <div className="space-y-20">
           <FeatureRow 
-            index={1}
             icon={Camera}
             title="Visionary OCR"
             description="Our advanced OCR (Optical Character Recognition) engine doesn't just read text—it understands context. It knows the difference between a pack of milk and a milk-based dessert, categorizing your life automatically."
             imageSide="right"
           />
           <FeatureRow 
-            index={2}
             icon={Users}
             title="Unified Households"
              description="Living together shouldn't be about tracking who owes who. Shared pantries and bill splitting are baked into the core experience, making household management invisible."
             imageSide="left"
           />
           <FeatureRow 
-            index={3}
             icon={TrendingUp}
             title="Predictive Savings"
             description="Our AI tracks price history across thousands of users. We'll warn you if your favorite brands are hiking prices, suggest cheaper alternatives, and predict your monthly spend before it happens."
@@ -262,6 +286,54 @@ const App = () => {
              <StatItem value="₹2Cr+" label="Savings Identified" />
              <StatItem value="50K+" label="Active Households" />
              <StatItem value="99.9%" label="AI Accuracy" />
+           </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-40 px-8">
+        <div className="max-w-7xl mx-auto">
+           <div className="text-center mb-24">
+              <MotiBadge text="User Love" />
+              <h2 className="text-4xl md:text-6xl font-outfit font-black leading-tight">Mastering households everywhere.</h2>
+           </div>
+           <div className="grid md:grid-cols-3 gap-10">
+              <TestimonialCard 
+                name="Aravind J."
+                role="Co-living Resident"
+                quote="The 'Shared Pantry' feature is a lifesaver. No more guessing who bought the milk last week."
+              />
+              <TestimonialCard 
+                name="Sarah K."
+                role="Family Manager"
+                quote="I've identified ₹2,500 in brand price hikes over 3 months. VisionBill paid for itself instantly."
+              />
+              <TestimonialCard 
+                name="Rajesh V."
+                role="Frequent Shopper"
+                quote="Fastest scanner I've ever used. The Gemini integration feels like it's reading my mind."
+              />
+           </div>
+        </div>
+      </section>
+
+      {/* FAQ: Addressing Intuitive Doubts */}
+      <section className="py-20 px-8 bg-white/[0.02]">
+        <div className="max-w-4xl mx-auto">
+           <h2 className="text-3xl font-outfit font-black mb-16 text-center">Frequently Asked Questions</h2>
+           <div className="space-y-8">
+              <FAQItem 
+                q="Does it work with handwritten local bills?" 
+                a="Yes! VisionBill is powered by Gemini 1.5 Flash, which has specialized vision models to handle messy, handwritten, or partially faded shop receipts." 
+              />
+              <FAQItem 
+                q="Is my data safe?" 
+                a="We use enterprise-grade encryption. Your receipt images are processed for extraction and then deleted from our cache after metadata storage." 
+              />
+              <FAQItem 
+                q="How does 'Long Bill Mode' work?" 
+                a="If your receipt is too long for one shot, you can take multiple overlapping segments. Our AI 'stitches' them together to create a single coherent bill." 
+              />
            </div>
         </div>
       </section>
@@ -335,6 +407,181 @@ const App = () => {
 };
 
 // --- Sub-components ---
+
+const MotiBadge = ({ text }: { text: string }) => (
+  <motion.span 
+    initial={{ opacity: 0, x: -20 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest mb-6"
+  >
+    {text}
+  </motion.span>
+);
+
+const BenefitRow = ({ icon, text }: any) => (
+  <div className="flex gap-4 items-start">
+    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 mt-1">
+      {icon}
+    </div>
+    <p className="text-white/60 text-lg leading-relaxed">{text}</p>
+  </div>
+);
+
+const FAQItem = ({ q, a }: any) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div onClick={() => setOpen(!open)} className="glass rounded-3xl p-8 cursor-pointer group">
+       <div className="flex justify-between items-center">
+          <h4 className="text-lg font-bold text-white group-hover:text-primary transition-colors">{q}</h4>
+          <Plus className={`w-5 h-5 transition-transform duration-300 ${open ? 'rotate-45 text-primary' : 'text-white/40'}`} />
+       </div>
+       <AnimatePresence>
+          {open && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: 'auto', opacity: 1, marginTop: 16 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
+              className="overflow-hidden"
+            >
+               <p className="text-white/40 leading-relaxed font-medium">{a}</p>
+            </motion.div>
+          )}
+       </AnimatePresence>
+    </div>
+  );
+};
+
+const TestimonialCard = ({ name, role, quote }: any) => (
+  <motion.div 
+    whileHover={{ y: -10 }}
+    className="glass p-12 rounded-[2.5rem] relative"
+  >
+     <Quote className="absolute top-8 right-8 w-12 h-12 text-white/5 opacity-20" />
+     <div className="flex gap-1 mb-8">
+        {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
+     </div>
+     <p className="text-xl italic text-white/80 mb-10 leading-relaxed">"{quote}"</p>
+     <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center font-black">
+           {name[0]}
+        </div>
+        <div>
+           <p className="font-bold">{name}</p>
+           <p className="text-xs text-white/40 tracking-widest uppercase">{role}</p>
+        </div>
+     </div>
+  </motion.div>
+);
+
+const LiveDemo = () => {
+  const [isScanning, setIsScanning] = React.useState(false);
+  const [scanned, setScanned] = React.useState(false);
+  
+  const handleScan = () => {
+    setIsScanning(true);
+    setTimeout(() => {
+      setIsScanning(false);
+      setScanned(true);
+    }, 2000);
+  };
+
+  return (
+    <div className="p-8 min-h-[500px] flex flex-col">
+       <div className="flex justify-between items-center mb-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-2xl">
+               <Camera className="text-white" />
+            </div>
+            <h4 className="text-xl font-black font-outfit">Live OCR Demo</h4>
+          </div>
+          <button 
+             onClick={() => { setScanned(false); handleScan(); }}
+             className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-black uppercase transition-all"
+          >
+             Reset Simulation
+          </button>
+       </div>
+
+       <div className="flex-1 rounded-3xl bg-black/40 border border-white/5 p-8 flex flex-col relative overflow-hidden">
+          {isScanning && (
+            <motion.div 
+              initial={{ top: -10 }}
+              animate={{ top: '100%' }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent z-10 shadow-[0_0_20px_rgba(99,102,241,0.8)]"
+            />
+          )}
+
+          {!scanned && !isScanning ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+               <Receipt className="w-20 h-20 text-white/10 mb-8" />
+               <p className="text-lg font-bold text-white/50 mb-8">Place a messy receipt to see the magic.</p>
+               <button 
+                 onClick={handleScan}
+                 className="bg-primary text-white px-10 py-5 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+               >
+                 Simulation: Scan Receipt
+               </button>
+            </div>
+          ) : (
+             <AnimatePresence mode="wait">
+               {isScanning ? (
+                 <motion.div 
+                   key="loading" 
+                   initial={{ opacity: 0 }} 
+                   animate={{ opacity: 1 }} 
+                   exit={{ opacity: 0 }}
+                   className="flex-1 flex flex-col items-center justify-center"
+                 >
+                    <div className="w-24 h-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-8" />
+                    <p className="text-primary font-black uppercase tracking-widest text-xs">Analyzing pixels...</p>
+                 </motion.div>
+               ) : (
+                 <motion.div 
+                   key="results"
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="space-y-4"
+                 >
+                    <div className="flex justify-between items-end mb-8">
+                       <div>
+                          <p className="text-xs text-white/30 font-black uppercase mb-1">Merchant Found</p>
+                          <p className="text-2xl font-outfit font-black">Star Bazaar</p>
+                       </div>
+                       <p className="text-2xl font-outfit font-black text-green-400">₹1,240.50</p>
+                    </div>
+                    <DemoItem name="Fresh Milk 1L" price="₹42.00" category="Dairy" />
+                    <DemoItem name="Sourdough Bread" price="₹110.00" category="Bakery" />
+                    <DemoItem name="Laundry Pods (30pc)" price="₹890.00" category="Home Care" delay={0.1} />
+                    <DemoItem name="Bell Peppers Red" price="₹198.50" category="Produce" delay={0.2} />
+                 </motion.div>
+               )}
+             </AnimatePresence>
+          )}
+       </div>
+    </div>
+  );
+};
+
+const DemoItem = ({ name, price, category, delay = 0 }: any) => (
+  <motion.div 
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay }}
+    className="flex items-center justify-between p-4 glass rounded-xl border-white/5"
+  >
+     <div className="flex items-center gap-4">
+        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">
+           {name[0]}
+        </div>
+        <div>
+           <p className="text-sm font-bold">{name}</p>
+           <p className="text-[10px] text-white/30 uppercase tracking-widest font-black">{category}</p>
+        </div>
+     </div>
+     <p className="text-sm font-black">{price}</p>
+  </motion.div>
+);
 
 const StatItem = ({ value, label }: any) => {
   const ref = useRef(null);
