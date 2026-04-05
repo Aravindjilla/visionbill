@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import Lenis from '@studio-freight/lenis';
 import { 
   motion, 
   useScroll, 
@@ -47,9 +48,9 @@ const Navbar = () => {
           <a href="#story" className="text-white/50 hover:text-white transition-colors">The Story</a>
           <a href="#features" className="text-white/50 hover:text-white transition-colors">Features</a>
           <a href="#pricing" className="text-white/50 hover:text-white transition-colors">Pricing</a>
-          <button className="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
+          <MagneticButton className="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
             Download App
-          </button>
+          </MagneticButton>
         </div>
         <button className="md:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X /> : <Menu />}
@@ -144,6 +145,30 @@ const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right' }: any
 
 const App = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      infinite: false,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
@@ -178,10 +203,17 @@ const App = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-6xl md:text-[9rem] font-outfit font-extrabold leading-[0.9] tracking-tighter mb-12"
+            className="text-6xl md:text-[9.5rem] font-outfit font-extrabold leading-[0.85] tracking-tighter mb-12"
           >
             Scan. <br />
-            <span className="text-gradient">Simplify.</span>
+            <motion.span 
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 1 }}
+              className="text-gradient inline-block"
+            >
+              Simplify.
+            </motion.span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 30 }}
@@ -197,13 +229,20 @@ const App = () => {
              transition={{ delay: 0.3 }}
              className="flex justify-center"
           >
-             <button className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all">
+             <MagneticButton className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all">
                 Download the Story
-             </button>
+             </MagneticButton>
           </motion.div>
         </motion.div>
 
         {/* Parallax Background Elements */}
+        <motion.div 
+           className="absolute top-1/2 left-0 w-full text-[25vw] font-black pointer-events-none opacity-[0.02] select-none leading-none -translate-y-1/2 whitespace-nowrap"
+           style={{ x: useTransform(scrollYProgress, [0, 1], [100, -1000]) }}
+        >
+          VISIONBILL INTELLIGENCE
+        </motion.div>
+
         <motion.div style={{ opacity }} className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/20 animate-bounce">
            <ChevronDown className="w-8 h-8" />
         </motion.div>
@@ -220,6 +259,24 @@ const App = () => {
              className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-purple-500/10 blur-[150px] rounded-full" 
            />
         </div>
+      </section>
+
+      {/* Shared Pantry Highlight with Scroll Scale */}
+      <section className="relative overflow-hidden">
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.8 }}
+           whileInView={{ opacity: 1, scale: 1 }}
+           transition={{ duration: 1.5, ease: "circOut" }}
+           className="max-w-7xl mx-auto px-8 py-60 text-center"
+         >
+            <h2 className="text-5xl md:text-8xl font-outfit font-black mb-12">The last scanner <br /> you'll ever need.</h2>
+            <div className="flex flex-wrap justify-center gap-12 mt-20 opacity-30">
+               <Smartphone size={100} />
+               <Receipt size={100} />
+               <TrendingUp size={100} />
+               <Users size={100} />
+            </div>
+         </motion.div>
       </section>
 
       {/* The Story Section: Fade in Content */}
@@ -256,7 +313,21 @@ const App = () => {
            </div>
         </section>
 
-        <div className="space-y-20">
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0 },
+            show: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.3
+              }
+            }
+          }}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="space-y-20"
+        >
           <FeatureRow 
             icon={Camera}
             title="Visionary OCR"
@@ -275,7 +346,7 @@ const App = () => {
             description="Our AI tracks price history across thousands of users. We'll warn you if your favorite brands are hiking prices, suggest cheaper alternatives, and predict your monthly spend before it happens."
             imageSide="right"
           />
-        </div>
+        </motion.div>
       </section>
 
       {/* Horizontal Scroll or Stat Count (AOS style) */}
@@ -297,7 +368,19 @@ const App = () => {
               <MotiBadge text="User Love" />
               <h2 className="text-4xl md:text-6xl font-outfit font-black leading-tight">Mastering households everywhere.</h2>
            </div>
-           <div className="grid md:grid-cols-3 gap-10">
+           <motion.div 
+             variants={{
+               hidden: { opacity: 0 },
+               show: {
+                 opacity: 1,
+                 transition: { staggerChildren: 0.2 }
+               }
+             }}
+             initial="hidden"
+             whileInView="show"
+             viewport={{ once: true }}
+             className="grid md:grid-cols-3 gap-10"
+           >
               <TestimonialCard 
                 name="Aravind J."
                 role="Co-living Resident"
@@ -313,7 +396,7 @@ const App = () => {
                 role="Frequent Shopper"
                 quote="Fastest scanner I've ever used. The Gemini integration feels like it's reading my mind."
               />
-           </div>
+           </motion.div>
         </div>
       </section>
 
@@ -639,5 +722,37 @@ const FooterLinkGroup = ({ title, links }: any) => (
 const ArrowRight = ({ className }: { className?: string }) => (
   <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 );
+
+const MagneticButton = ({ children, className }: any) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = React.useState({ x: 0, y: 0 });
+
+  const handleMouse = (e: React.MouseEvent) => {
+    if (!ref.current) return;
+    const { clientX, clientY } = e;
+    const { height, width, left, top } = ref.current.getBoundingClientRect();
+    const middleX = clientX - (left + width / 2);
+    const middleY = clientY - (top + height / 2);
+    setPosition({ x: middleX * 0.1, y: middleY * 0.1 });
+  };
+
+  const reset = () => setPosition({ x: 0, y: 0 });
+
+  const { x, y } = position;
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      animate={{ x, y }}
+      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+    >
+      <button className={className}>
+        {children}
+      </button>
+    </motion.div>
+  );
+};
 
 export default App;
