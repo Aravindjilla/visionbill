@@ -1,5 +1,7 @@
 import { Controller, Post, Patch, UseInterceptors, UploadedFiles, Req, Get, Param, UseGuards, Body, UploadedFile, Delete, Query, BadRequestException } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
 import { ScansService } from './scans.service';
 import { BillItemDto, UpdateItemsDto } from '../common-types';
 import type { AuthenticatedRequest, ScanResponseDto, ScansListResponseDto } from '../common-types';
@@ -8,6 +10,17 @@ import type { ScanDocument } from './schemas/scan.schema';
 import type { ScanSessionDocument } from './schemas/scan-session.schema';
 import type { Express } from 'express';
 
+const TMP_UPLOAD_DIR = '/tmp/uploads';
+
+const multerDiskStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(TMP_UPLOAD_DIR, { recursive: true });
+    cb(null, TMP_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+  },
+});
 
 const MULTER_UPLOAD_LIMITS = { fileSize: 10 * 1024 * 1024 }; // 10MB
 const IMAGE_FILE_FILTER = (req: any, file: any, callback: any) => {
@@ -41,6 +54,7 @@ export class ScansController {
 
   @Post('session/:id/segment')
   @UseInterceptors(FileInterceptor('image', {
+    storage: multerDiskStorage,
     limits: MULTER_UPLOAD_LIMITS,
     fileFilter: IMAGE_FILE_FILTER,
   }))
@@ -55,6 +69,7 @@ export class ScansController {
 
   @Post('upload')
   @UseInterceptors(FilesInterceptor('images', 10, {
+    storage: multerDiskStorage,
     limits: MULTER_UPLOAD_LIMITS,
     fileFilter: IMAGE_FILE_FILTER,
   }))
@@ -64,6 +79,7 @@ export class ScansController {
 
   @Post('upload-pdf')
   @UseInterceptors(FileInterceptor('pdf', {
+    storage: multerDiskStorage,
     limits: MULTER_UPLOAD_LIMITS,
     fileFilter: PDF_FILE_FILTER,
   }))

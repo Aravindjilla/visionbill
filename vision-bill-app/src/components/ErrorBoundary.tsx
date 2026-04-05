@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -24,6 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     if (__DEV__) console.error('Uncaught error:', error, errorInfo);
+    Sentry.captureException(error, { extra: { errorInfo } });
   }
 
   private handleReset = () => {

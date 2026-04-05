@@ -5,6 +5,8 @@ import { Typography } from '../theme/typography';
 import { Spacing } from '../theme/spacing';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuthStore } from '../store/useAuthStore';
+import { presentPaywall } from '../utils/revenuecat';
 
 const { width } = Dimensions.get('window');
 
@@ -16,18 +18,23 @@ interface PaywallModalProps {
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose, reason = 'manual' }) => {
   const theme = useTheme();
+  const { scanLimit } = useAuthStore();
   const [purchasing, setPurchasing] = React.useState(false);
 
   const handlePurchase = async () => {
     setPurchasing(true);
-    // Simulate payment processing journey
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const success = await presentPaywall();
     setPurchasing(false);
-    Alert.alert(
-      '✨ Welcome to Pro!',
-      'Your account has been upgraded. You now have unlimited scans and full access to all premium features.',
-      [{ text: 'Start Exploring', onPress: onClose }]
-    );
+    
+    if (success) {
+      // Sync with our backend + RC
+      await useAuthStore.getState().refreshStatus();
+      Alert.alert(
+        '✨ Welcome to Pro!',
+        'Your account has been upgraded. You now have unlimited scans and full access to all premium features.',
+        [{ text: 'Start Exploring', onPress: onClose }]
+      );
+    }
   };
 
   return (
@@ -61,7 +68,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ visible, onClose, re
             </Text>
             <Text style={[styles.subtitle, { color: theme.textMuted }]}>
               {reason === 'limit' 
-                ? "You've scanned 5/5 bills this month. Upgrade to Pro for unlimited scanning and advanced tracking." 
+                ? `You've scanned ${scanLimit}/${scanLimit} bills this month. Upgrade to Pro for unlimited scanning and advanced tracking.` 
                 : "Join thousands of users saving time and money with our premium ecosystem."}
             </Text>
 

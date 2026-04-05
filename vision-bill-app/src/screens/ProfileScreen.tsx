@@ -10,6 +10,8 @@ import api from '../utils/api';
 import { SCREENS } from '../utils/constants';
 import { Shimmer } from '../components/Shimmer';
 import { useThemeStore } from '../store/useThemeStore';
+import { presentCustomerCenter, logoutUser } from '../utils/revenuecat';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export const ProfileScreen = ({ navigation }: any) => {
   const queryClient = useQueryClient();
@@ -61,6 +63,7 @@ export const ProfileScreen = ({ navigation }: any) => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: async () => {
+        await logoutUser();
         await clearSession();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }},
@@ -195,7 +198,14 @@ export const ProfileScreen = ({ navigation }: any) => {
           style={styles.subscriptionsBtn}
           onPress={() => navigation.navigate(SCREENS.SUBSCRIPTIONS)}
         >
-          <Text style={styles.subscriptionsBtnText}>📅 Manage Subscriptions</Text>
+          <Text style={styles.subscriptionsBtnText}>📅 Manage External Subscriptions</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.subscriptionsBtn, { backgroundColor: theme.primary + '10', borderColor: theme.primary }]}
+          onPress={presentCustomerCenter}
+        >
+          <Text style={[styles.subscriptionsBtnText, { color: theme.primary }]}>✨ Manage VisionBill Pro</Text>
         </Pressable>
 
         <Pressable
@@ -203,6 +213,13 @@ export const ProfileScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate(SCREENS.PRIVACY)}
         >
           <Text style={styles.subscriptionsBtnText}>🛡️ Privacy & Security</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.subscriptionsBtn, { marginTop: 12 }]}
+          onPress={() => navigation.navigate(SCREENS.TERMS)}
+        >
+          <Text style={styles.subscriptionsBtnText}>📄 Terms of Service</Text>
         </Pressable>
 
         <View style={[styles.dangerZone, { borderTopColor: theme.border }]}>

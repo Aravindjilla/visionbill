@@ -25,6 +25,7 @@ import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
 import { SettlementScreen } from './src/screens/SettlementScreen';
 import { ReceiptHistoryScreen } from './src/screens/ReceiptHistoryScreen';
 import { PrivacyScreen } from './src/screens/PrivacyScreen';
+import { TermsScreen } from './src/screens/TermsScreen';
 import { SCREENS } from './src/utils/constants';
 
 import { QueryClient } from '@tanstack/react-query';
@@ -42,7 +43,15 @@ import * as Notifications from 'expo-notifications';
 import { useAuthStore } from './src/store/useAuthStore';
 import { getUserId } from './src/utils/auth';
 import { Alert } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 import { registerForPushNotificationsAsync } from './src/utils/notifications';
+import { initRevenueCat } from './src/utils/revenuecat';
+
+Sentry.init({
+  dsn: "YOUR_SENTRY_DSN_HERE", // TODO: Replace with real DSN
+  debug: __DEV__,
+  tracesSampleRate: 1.0,
+});
 
 export const navigationRef = createNavigationContainerRef();
 
@@ -55,6 +64,28 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
+
+const linking = {
+  prefixes: ['visionbill://', 'https://visionbill.vercel.app'],
+  config: {
+    screens: {
+      [SCREENS.LOGIN]: 'login',
+      [SCREENS.MAIN]: {
+        screens: {
+          [SCREENS.DASHBOARD]: 'dashboard',
+          [SCREENS.PANTRY]: 'pantry',
+          [SCREENS.GROUPS]: 'groups',
+          [SCREENS.PROFILE]: 'profile',
+        },
+      },
+      [SCREENS.VERIFICATION]: 'verification/:id',
+      [SCREENS.SPLIT]: 'split/:id',
+      [SCREENS.SUBSCRIPTIONS]: 'subscriptions',
+      [SCREENS.PRIVACY]: 'privacy',
+      [SCREENS.TERMS]: 'terms',
+    },
+  },
+};
 
 // Notifications.setNotificationHandler logic remains here as it's root configuration
 
@@ -176,6 +207,8 @@ export default function App() {
     (async () => {
       const hasOnboarded = await AsyncStorage.getItem('HAS_ONBOARDED');
       if (!hasOnboarded) setShowOnboarding(true);
+      const userId = await getUserId();
+      await initRevenueCat(userId || undefined);
       await initialize();
       await registerForPushNotificationsAsync();
     })();
@@ -257,7 +290,7 @@ export default function App() {
     >
       <ErrorBoundary>
         <AppTourProvider>
-          <NavigationContainer ref={navigationRef}>
+          <NavigationContainer ref={navigationRef} linking={linking}>
             <StatusBar style="auto" />
             <Stack.Navigator
               initialRouteName={isAuthenticated ? SCREENS.MAIN : SCREENS.LOGIN}
@@ -274,6 +307,7 @@ export default function App() {
               <Stack.Screen name={SCREENS.SETTLEMENT} component={SettlementScreen} />
               <Stack.Screen name={SCREENS.RECEIPT_HISTORY} component={ReceiptHistoryScreen} />
               <Stack.Screen name={SCREENS.PRIVACY} component={PrivacyScreen} />
+              <Stack.Screen name={SCREENS.TERMS} component={TermsScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </AppTourProvider>

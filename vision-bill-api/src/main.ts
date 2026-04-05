@@ -1,14 +1,18 @@
 import { NestFactory } from '@nestjs/core';
+import { INestApplication } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import helmet from 'helmet';
 
-async function bootstrap() {
+let cachedApp: INestApplication;
+
+async function createApp(): Promise<INestApplication> {
+  if (cachedApp) return cachedApp;
+
   const app = await NestFactory.create(AppModule, {
-    // Removed open CORS for security hardening
     logger: WinstonModule.createLogger({
       transports: [
         new winston.transports.Console({
@@ -53,6 +57,18 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.init();
+  cachedApp = app;
+  return app;
 }
-bootstrap();
+
+// Vercel serverless entry point
+export default async function handler(req: any, res: any) {
+  const app = await createApp();
+  app.getHttpAdapter().getInstance()(req, res);
+}
+
+// Local development only
+if (!process.env.VERCEL) {
+  createApp().then(app => app.listen(process.env.PORT ?? 3000));
+}

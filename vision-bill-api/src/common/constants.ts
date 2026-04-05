@@ -22,7 +22,7 @@ export const IMAGE_CONFIG = {
 
 export const PDF_CONFIG = {
   PAGE_WIDTH: 1080,
-  TEMP_DIR: 'uploads/temp_pdf',
+  TEMP_DIR: '/tmp/pdf_pages',
   MAX_PAGES: 30,
 };
 

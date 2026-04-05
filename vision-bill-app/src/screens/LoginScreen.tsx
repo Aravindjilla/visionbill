@@ -12,6 +12,7 @@ import { saveTokens } from '../utils/auth';
 import { SCREENS } from '../utils/constants';
 import { useAuthStore } from '../store/useAuthStore';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
+import { identifyUser } from '../utils/revenuecat';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -49,6 +50,7 @@ export const LoginScreen = ({ navigation }: any) => {
       await saveTokens(String(user.id), accessToken, refreshToken);
       setSession(String(user.id), accessToken, user.tier ?? 'free');
 
+      await identifyUser(String(user.id));
       await registerForPushNotificationsAsync();
       navigation.navigate(SCREENS.MAIN);
     } catch {
@@ -90,7 +92,16 @@ export const LoginScreen = ({ navigation }: any) => {
             </>
           )}
         </Pressable>
-        <Text style={styles.terms}>By continuing, you agree to our Terms and Privacy Policy</Text>
+        <View style={styles.termsRow}>
+          <Text style={styles.terms}>By continuing, you agree to our </Text>
+          <Pressable onPress={() => navigation.navigate(SCREENS.TERMS)}>
+            <Text style={styles.termsLink}>Terms</Text>
+          </Pressable>
+          <Text style={styles.terms}> and </Text>
+          <Pressable onPress={() => navigation.navigate(SCREENS.PRIVACY)}>
+            <Text style={styles.termsLink}>Privacy Policy</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -163,10 +174,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary,
   },
+  termsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
   terms: {
     ...Typography.tiny,
     color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.lg,
+  },
+  termsLink: {
+    ...Typography.tiny,
+    color: Colors.primary,
+    textDecorationLine: 'underline',
   },
 });

@@ -5,7 +5,7 @@ import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
-import { AUTH_CONFIG } from '../common/constants';
+import { AUTH_CONFIG, SCAN_LIMITS } from '../common/constants';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +13,10 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
   ) {}
+
+  async getUserById(userId: string) {
+    return this.userModel.findById(userId).exec();
+  }
 
   async validateUser(details: any) {
     let user = await this.userModel.findOne({ email: details.email });
@@ -43,6 +47,9 @@ export class AuthService {
         id: user._id,
         email: user.email,
         displayName: user.displayName,
+        tier: user.tier || 'free',
+        monthlyScanCount: user.monthlyScanCount || 0,
+        scanLimit: user.tier === 'pro' ? 999999 : SCAN_LIMITS.FREE_TIER_MONTHLY_LIMIT,
       }
     };
   }

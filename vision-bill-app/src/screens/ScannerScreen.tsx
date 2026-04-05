@@ -22,7 +22,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [camera, setCamera] = useState<any>(null);
   const { addImage, currentImages, clearImages, setScan, setLoading, setError, loading, loadingMessage, error } = useScanStore();
-  const { tier, monthlyScanCount } = useAuthStore();
+  const { tier, monthlyScanCount, scanLimit } = useAuthStore();
   
   const [isLongBill, setIsLongBill] = useState(false);
   const [paywallVisible, setPaywallVisible] = useState(false);
@@ -34,10 +34,10 @@ export const ScannerScreen = ({ navigation, route }: any) => {
   }, [route.params?.imageFromGallery]);
 
   useEffect(() => {
-    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+    if (tier === 'free' && (monthlyScanCount || 0) >= scanLimit) {
       setPaywallVisible(true);
     }
-  }, [tier, monthlyScanCount]);
+  }, [tier, monthlyScanCount, scanLimit]);
 
   useEffect(() => {
     if (!permission) {
@@ -92,26 +92,9 @@ export const ScannerScreen = ({ navigation, route }: any) => {
       navigation.navigate(SCREENS.VERIFICATION);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const message = err?.response?.data?.message || err?.message || 'Scan failed. Using demo data.';
+      const message = err?.response?.data?.message || err?.message || 'Scan failed. Please try again.';
       setError(message);
-      // Mock Fallback for dev/demo
-      setScan({
-        _id: 'mock-id',
-        userId: 'demo-user-id',
-        imageUrl: 'https://via.placeholder.com/400x600',
-        billType: 'grocery',
-        status: 'completed',
-        createdAt: new Date().toISOString(),
-        extractedTotal: 595.00,
-        items: [
-          { shorthand: 'ORG_TMT_1KG', cleanName: 'Organic Tomato 1kg', category: 'Veggies', price: 150.00, qty: 1 },
-          { shorthand: 'MILK_FT_1L', cleanName: 'Full Cream Milk 1L', category: 'Dairy', price: 65.00, qty: 1 },
-          { shorthand: 'WHEAT_ATTA_5KG', cleanName: 'Whole Wheat Atta 5kg', category: 'Atta', price: 380.00, qty: 1 },
-        ],
-      });
-
       clearImages();
-      navigation.navigate('Verification');
     } finally {
       setLoading(false);
     }
@@ -126,7 +109,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
 
   const pickImage = async () => {
     // Audit check: Ensure scan limits are respected
-    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+    if (tier === 'free' && (monthlyScanCount || 0) >= scanLimit) {
       setPaywallVisible(true);
       return;
     }
@@ -158,7 +141,7 @@ export const ScannerScreen = ({ navigation, route }: any) => {
 
   const pickPdf = async () => {
     // Audit check: Ensure scan limits are respected
-    if (tier === 'free' && (monthlyScanCount || 0) >= 5) {
+    if (tier === 'free' && (monthlyScanCount || 0) >= scanLimit) {
       setPaywallVisible(true);
       return;
     }

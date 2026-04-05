@@ -41,7 +41,14 @@ export class AuthController {
   }
 
   @Get('status')
+  @UseGuards(AuthGuard('jwt'))
   async status(@Req() req: any) {
-    return { status: 'OK' };
+    const user = await this.authService.getUserById(req.user.sub);
+    if (!user) throw new BadRequestException('User not found');
+    return {
+      id: user._id,
+      tier: user.tier || 'free',
+      monthlyScanCount: user.monthlyScanCount || 0,
+    };
   }
 }

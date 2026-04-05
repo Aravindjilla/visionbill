@@ -35,4 +35,5 @@ export const SCREENS = {
   SETTLEMENT: 'Settlement',
   RECEIPT_HISTORY: 'ReceiptHistory',
   PRIVACY: 'Privacy',
+  TERMS: 'Terms',
 };
