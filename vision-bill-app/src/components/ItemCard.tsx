@@ -58,20 +58,13 @@ export const ItemCard = React.memo<ItemCardProps>(({
         transition={{ type: 'spring', damping: 15 }}
         style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}
       >
-        <View style={styles.left}>
-          <View style={styles.imageContainer}>
-            {imageUrl ? (
+        {imageUrl && (
+          <View style={styles.left}>
+            <View style={[styles.imageContainer, { backgroundColor: theme.shimmer }]}>
               <Image source={{ uri: imageUrl }} style={styles.image} />
-            ) : (
-              <MotiView
-                from={{ opacity: 0.3 }}
-                animate={{ opacity: 0.7 }}
-                transition={{ loop: true, type: 'timing', duration: 1000 }}
-                style={styles.shimmer}
-              />
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.center}>
           <Text style={[styles.name, { color: theme.text }]}>{name}</Text>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewProps, ViewStyle } from 'react-native';
-import { Colors } from '../theme/colors';
+import { useTheme } from '../theme/colors';
 
 interface GlassCardProps extends ViewProps {
   children: React.ReactNode;
@@ -9,21 +9,24 @@ interface GlassCardProps extends ViewProps {
 }
 
 export const GlassCard = ({ children, style, intensity = 'medium', ...props }: GlassCardProps) => {
-  const getIntensityStyle = () => {
+  const theme = useTheme();
+
+  const getIntensityStyle = (): ViewStyle => {
     switch (intensity) {
-      case 'low': return { backgroundColor: 'rgba(26, 29, 39, 0.4)' };
-      case 'high': return { backgroundColor: 'rgba(26, 29, 39, 0.85)' };
-      default: return { backgroundColor: Colors.card };
+      case 'low':  return { backgroundColor: theme.surface };
+      case 'high': return { backgroundColor: theme.surfaceLight };
+      default:     return { backgroundColor: theme.card };
     }
   };
 
   return (
-    <View 
+    <View
       style={[
-        styles.card, 
+        styles.card,
+        { borderColor: theme.border },
         getIntensityStyle(),
-        style
-      ]} 
+        style,
+      ]}
       {...props}
     >
       {children}
@@ -35,12 +38,11 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     elevation: 4,
   },
 });

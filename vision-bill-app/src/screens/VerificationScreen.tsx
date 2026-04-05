@@ -8,6 +8,7 @@ import { ItemCard } from '../components/ItemCard';
 import { Shimmer } from '../components/Shimmer';
 import { useScanStore } from '../store/useScanStore';
 import api from '../utils/api';
+import { SCREENS } from '../utils/constants';
 
 export const VerificationScreen = ({ navigation }: any) => {
   const theme = useTheme();
@@ -27,7 +28,7 @@ export const VerificationScreen = ({ navigation }: any) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]}>
         <View style={styles.header}>
           <Text style={styles.title}>{loadingMessage || 'Analyzing Bill...'}</Text>
           <Text style={styles.subtitle}>Gemini is working its magic ✨</Text>
@@ -71,13 +72,13 @@ export const VerificationScreen = ({ navigation }: any) => {
         </View>
       </View>
 
-      <Text style={styles.swipeHint}>💡 Long press to delete an item if AI hallucinated</Text>
+      <Text style={[styles.swipeHint, { color: theme.textMuted }]}>💡 Long press to delete an item if AI hallucinated</Text>
 
       <SectionList
         sections={groupedItems}
         keyExtractor={(item, index) => item.shorthand + index}
         ListHeaderComponent={() => (
-          <View style={styles.imageHeader}>
+          <View style={[styles.imageHeader, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <Image 
               source={{ uri: imageUrl || 'https://via.placeholder.com/400x600' }} 
               style={styles.stitchedImage}
@@ -89,7 +90,7 @@ export const VerificationScreen = ({ navigation }: any) => {
           </View>
         )}
         ListFooterComponent={() => (
-          <View style={styles.totalBreakdown}>
+          <View style={[styles.totalBreakdown, { borderTopColor: theme.border }]}>
             <View style={styles.totalRow}>
               <Text style={[styles.totalLabel, { color: theme.textMuted }]}>Subtotal</Text>
               <Text style={[styles.totalValue, { color: theme.text }]}>₹{items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}</Text>
@@ -106,7 +107,7 @@ export const VerificationScreen = ({ navigation }: any) => {
                 <Text style={[styles.totalValue, { color: theme.text }]}>₹{currentScan?.sgst?.toFixed(2)}</Text>
               </View>
             )}
-            <View style={[styles.totalRow, styles.grandTotalRow]}>
+            <View style={[styles.totalRow, styles.grandTotalRow, { borderTopColor: theme.border }]}>
               <Text style={[styles.totalLabel, { color: theme.text, fontFamily: 'Outfit_700Bold' }]}>Grand Total</Text>
               <Text style={[styles.totalValue, { color: theme.primary, fontFamily: 'Outfit_700Bold', fontSize: 22 }]}>
                 ₹{currentScan?.extractedTotal?.toFixed(2) || items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}
@@ -130,19 +131,18 @@ export const VerificationScreen = ({ navigation }: any) => {
           />
         ), [toggleItem, updateItemPrice])}
         renderSectionHeader={({ section: { title } }) => (
-          <Text style={[styles.sectionHeader, { backgroundColor: theme.surface }]}>{title}</Text>
+          <Text style={[styles.sectionHeader, { backgroundColor: theme.surface, color: theme.primary }]}>{title}</Text>
         )}
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <Pressable
-          style={[styles.splitButton, saving && { opacity: 0.6 }]}
+          style={[styles.splitButton, { backgroundColor: theme.primary, shadowColor: theme.primary }, saving && { opacity: 0.6 }]}
           disabled={saving}
           onPress={async () => {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            // Persist any price edits / toggled items back to the database
             if (currentScan?._id && currentScan._id !== 'mock-id') {
               setSaving(true);
               try {
@@ -160,6 +160,26 @@ export const VerificationScreen = ({ navigation }: any) => {
             ? <ActivityIndicator color="#FFF" />
             : <Text style={styles.splitButtonText}>Split with Friends</Text>
           }
+        </Pressable>
+        <Pressable
+          style={[styles.doneButton, { borderColor: theme.border }]}
+          disabled={saving}
+          onPress={async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (currentScan?._id && currentScan._id !== 'mock-id') {
+              setSaving(true);
+              try {
+                await api.patch(`/scans/${currentScan._id}/items`, { items });
+              } catch {
+                // best-effort save — proceed regardless
+              } finally {
+                setSaving(false);
+              }
+            }
+            navigation.navigate(SCREENS.MAIN);
+          }}
+        >
+          <Text style={[styles.doneButtonText, { color: theme.text }]}>Done</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -279,6 +299,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     fontSize: 18,
     color: '#FFF',
+  },
+  doneButton: {
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    marginTop: 10,
+  },
+  doneButtonText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
   },
   retakeBtn: {
     paddingHorizontal: 12,

@@ -292,10 +292,10 @@ export const DashboardScreen = ({ navigation }: any) => {
         {/* Insight Card: Trend */}
         <GlassCard style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Text style={styles.insightTitle}>Spending Trend</Text>
+            <Text style={[styles.insightTitle, { color: theme.text }]}>Spending Trend</Text>
             <TourStep id="pantry-link">
               <Pressable onPress={() => navigation.navigate(SCREENS.MAIN, { screen: SCREENS.PANTRY })}>
-                <Text style={styles.viewMore}>View Detail</Text>
+                <Text style={[styles.viewMore, { color: theme.primary }]}>View Detail</Text>
               </Pressable>
             </TourStep>
           </View>
@@ -317,7 +317,7 @@ export const DashboardScreen = ({ navigation }: any) => {
                 return (
                   <View key={i} style={styles.chartBarContainer}>
                     <View style={[styles.chartBar, { backgroundColor: theme.primary, height: barHeight, opacity: isToday ? 1 : 0.55 }]} />
-                    <Text style={styles.chartDate}>{d.day}</Text>
+                    <Text style={[styles.chartDate, { color: theme.textMuted }]}>{d.day}</Text>
                   </View>
                 );
               });
@@ -334,18 +334,19 @@ export const DashboardScreen = ({ navigation }: any) => {
           </GlassCard>
         ) : Object.keys(byCategory).length > 0 && (
           <GlassCard style={styles.insightCard}>
-            <Text style={[styles.insightTitle, { marginBottom: 16 }]}>Category Breakdown</Text>
-            {Object.entries(byCategory).map(([cat, val]: [string, any]) => {
+            <Text style={[styles.insightTitle, { marginBottom: 16, color: theme.text }]}>Category Breakdown</Text>
+            {Object.entries(byCategory).map(([cat, val]: [string, any], idx) => {
               const total = parseFloat(data?.stats?.find((s: any) => s.label === 'Total Spent')?.value.replace('₹', '') || '1');
               const pct = (val / total) * 100;
+              const barColor = idx % 2 === 0 ? theme.chart1 : theme.chart2;
               return (
                 <View key={cat} style={styles.catRow}>
                   <View style={styles.catInfo}>
-                    <Text style={styles.catLabel}>{cat}</Text>
-                    <Text style={styles.catValue}>₹{val.toFixed(0)}</Text>
+                    <Text style={[styles.catLabel, { color: theme.text }]}>{cat}</Text>
+                    <Text style={[styles.catValue, { color: theme.textMuted }]}>₹{val.toFixed(0)}</Text>
                   </View>
-                  <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${Math.min(pct, 100)}%` }]} />
+                  <View style={[styles.progressBarBg, { backgroundColor: theme.border }]}>
+                    <View style={[styles.progressBarFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: barColor }]} />
                   </View>
                 </View>
               );
@@ -357,9 +358,9 @@ export const DashboardScreen = ({ navigation }: any) => {
         {!loading && (
           <GlassCard style={styles.savingsCard}>
             <View style={styles.savingsInfo}>
-              <Text style={styles.savingsTitle}>Total Savings This Month</Text>
-              <Text style={styles.savingsAmount}>₹{savedAmount.toFixed(0)}</Text>
-              <Text style={styles.savingsGoalText}>Goal: ₹{savingsGoal}</Text>
+              <Text style={[styles.savingsTitle, { color: theme.textMuted }]}>Total Savings This Month</Text>
+              <Text style={[styles.savingsAmount, { color: theme.text }]}>₹{savedAmount.toFixed(0)}</Text>
+              <Text style={[styles.savingsGoalText, { color: theme.textMuted }]}>Goal: ₹{savingsGoal}</Text>
             </View>
             <ProgressChart
               data={{ data: [Math.min(savedAmount / savingsGoal, 1)] }}
@@ -381,18 +382,18 @@ export const DashboardScreen = ({ navigation }: any) => {
         {/* Recent Receipts Section */}
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</Text>
             <View style={styles.exportActions}>
-              <Pressable onPress={() => handleExportCSV(recentReceipts)} style={styles.exportBtn}>
-                <Text style={styles.exportBtnText}>📄 CSV</Text>
+              <Pressable onPress={() => handleExportCSV(recentReceipts)} style={[styles.exportBtn, { borderColor: theme.border }]}>
+                <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📄 CSV</Text>
               </Pressable>
-              <Pressable onPress={() => handleExportPDF(recentReceipts)} style={styles.exportBtn}>
-                <Text style={styles.exportBtnText}>📑 PDF Latest</Text>
+              <Pressable onPress={() => handleExportPDF(recentReceipts)} style={[styles.exportBtn, { borderColor: theme.border }]}>
+                <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📑 PDF</Text>
               </Pressable>
             </View>
           </View>
           <Pressable onPress={() => navigation.navigate('ReceiptHistory')}>
-            <Text style={styles.viewMore}>See All</Text>
+            <Text style={[styles.viewMore, { color: theme.primary }]}>See All</Text>
           </Pressable>
         </View>
 
@@ -405,21 +406,21 @@ export const DashboardScreen = ({ navigation }: any) => {
           recentReceipts.map((r: any) => (
             <Pressable
               key={r._id}
-              style={styles.receiptCard}
+              style={[styles.receiptCard, { backgroundColor: theme.card, borderColor: theme.border }]}
               onPress={() => handleReceiptPress(r)}
               onLongPress={() => handleDeleteScan(r._id)}
             >
-              <View style={styles.receiptIcon}>
+              <View style={[styles.receiptIcon, { backgroundColor: theme.glassPrimary }]}>
                 <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
               </View>
               <View style={styles.receiptMain}>
-                <Text style={styles.storeName} numberOfLines={1} ellipsizeMode="tail">{r.merchantName || 'New Scan'}</Text>
-                <Text style={styles.receiptMeta}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
+                <Text style={[styles.storeName, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">{r.merchantName || 'New Scan'}</Text>
+                <Text style={[styles.receiptMeta, { color: theme.textMuted }]}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
               </View>
               <View style={styles.receiptRight}>
                 <Text style={[styles.receiptAmount, { color: theme.text }]}>₹{r.extractedTotal?.toFixed(2) || '0.00'}</Text>
-                <Text style={[styles.statusBadge, { color: r.status === 'completed' ? theme.success : theme.error }]}>
-                  {r.status === 'completed' ? '✓' : '⏳'}
+                <Text style={[styles.statusBadge, { color: r.status === 'completed' ? theme.success : theme.warning }]}>
+                  {r.status === 'completed' ? '✓ Done' : '⏳ Processing'}
                 </Text>
               </View>
             </Pressable>
