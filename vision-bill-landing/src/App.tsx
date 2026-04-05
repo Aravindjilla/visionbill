@@ -1,306 +1,396 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
+import { 
+  motion, 
+  useScroll, 
+  useTransform, 
+  useSpring, 
+  useInView,
+  AnimatePresence 
+} from 'framer-motion';
 import { 
   Camera, 
-  Smartphone, 
   Users, 
   Receipt, 
   TrendingUp, 
+  Smartphone,
   ShieldCheck, 
   Zap,
   Download,
   Menu,
   X,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 
-const App = () => {
+// --- Components ---
+
+const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const { scrollY } = useScroll();
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    return scrollY.onChange((latest) => setIsScrolled(latest > 50));
+  }, [scrollY]);
 
   return (
-    <div className="min-h-screen font-inter scroll-smooth">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Receipt className="text-white w-6 h-6" />
-            </div>
-            <span className="font-outfit text-2xl font-extrabold tracking-tight">VisionBill</span>
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled ? 'glass py-4' : 'py-8'}`}>
+      <div className="max-w-7xl mx-auto px-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+            <Receipt className="text-white w-6 h-6" />
           </div>
-
-          <div className="hidden md:flex items-center gap-10 text-sm font-medium text-white/70">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="https://visionbill.vercel.app/privacy" className="hover:text-white transition-colors">Privacy</a>
-            <button className="bg-white text-black px-6 py-2.5 rounded-full font-bold hover:bg-white/90 transition-all active:scale-95">
-              Download Now
-            </button>
-          </div>
-
-          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X /> : <Menu />}
+          <span className="font-outfit text-2xl font-extrabold tracking-tight">VisionBill</span>
+        </div>
+        <div className="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
+          <a href="#story" className="text-white/50 hover:text-white transition-colors">The Story</a>
+          <a href="#features" className="text-white/50 hover:text-white transition-colors">Features</a>
+          <a href="#pricing" className="text-white/50 hover:text-white transition-colors">Pricing</a>
+          <button className="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
+            Download App
           </button>
         </div>
+        <button className="md:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          {isMenuOpen ? <X /> : <Menu />}
+        </button>
+      </div>
+    </nav>
+  );
+};
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
+const SectionHeading = ({ title, subtitle, badge }: { title: string, subtitle: string, badge?: string }) => (
+  <div className="max-w-3xl mb-20">
+    {badge && (
+      <motion.span 
+        initial={{ opacity: 0, x: -20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest mb-6"
+      >
+        {badge}
+      </motion.span>
+    )}
+    <motion.h2 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      className="text-4xl md:text-6xl font-outfit font-extrabold mb-8 leading-tight"
+    >
+      {title}
+    </motion.h2>
+    <motion.p 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="text-xl text-white/40 leading-relaxed"
+    >
+      {subtitle}
+    </motion.p>
+  </div>
+);
+
+const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right', index }: any) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, amount: 0.3 });
+
+  return (
+    <div ref={ref} className={`flex flex-col ${imageSide === 'right' ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-20 py-32`}>
+      <motion.div 
+        className="flex-1"
+        initial={{ opacity: 0, x: imageSide === 'right' ? -50 : 50 }}
+        animate={isInView ? { opacity: 1, x: 0 } : {}}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+      >
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-8">
+          <Icon className="text-primary w-8 h-8" />
+        </div>
+        <h3 className="text-3xl md:text-5xl font-outfit font-bold mb-6">{title}</h3>
+        <p className="text-lg text-white/50 leading-relaxed mb-8">{description}</p>
+        <div className="flex items-center gap-4 text-primary font-bold cursor-pointer group">
+          Learn how it works 
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+        </div>
+      </motion.div>
+
+      <motion.div 
+        className="flex-1 relative"
+        initial={{ opacity: 0, scale: 0.8, rotate: imageSide === 'right' ? 5 : -5 }}
+        animate={isInView ? { opacity: 1, scale: 1, rotate: 0 } : {}}
+        transition={{ duration: 1, ease: "circOut" }}
+      >
+        <div className="aspect-square bg-gradient-to-br from-primary/20 to-purple-500/10 rounded-[3rem] glass flex items-center justify-center p-12 overflow-hidden">
           <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="md:hidden absolute top-20 w-full glass p-6 border-b border-white/10"
+            animate={{ y: isInView ? [0, -20, 0] : 0 }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="w-full h-full bg-white/5 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden"
           >
-            <div className="flex flex-col gap-6 text-center">
-              <a href="#features" onClick={() => setIsMenuOpen(false)}>Features</a>
-              <a href="#pricing" onClick={() => setIsMenuOpen(false)}>Pricing</a>
-              <button className="bg-primary text-white p-4 rounded-xl font-bold">Download App</button>
-            </div>
+             <div className="absolute top-0 left-0 w-full h-2 bg-primary/20" />
+             <div className="p-8 space-y-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-4 w-full bg-white/5 rounded-full" />
+                ))}
+                <div className="h-32 w-full bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center">
+                   <div className="w-12 h-12 rounded-full border-2 border-primary border-dashed animate-spin" />
+                </div>
+             </div>
           </motion.div>
-        )}
-      </nav>
+        </div>
+        <div className={`absolute -inset-20 bg-primary/10 blur-[100px] rounded-full -z-10`} />
+      </motion.div>
+    </div>
+  );
+};
 
-      {/* Hero Section */}
-      <section className="pt-48 pb-32 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="flex-1 text-center md:text-left">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold mb-8"
-            >
-              🚀 AI-Powered Receipt Tracking 2.0
-            </motion.div>
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-5xl md:text-7xl font-outfit font-extrabold leading-[1.1] mb-8"
-            >
-              Scan. Split. <br />
-              <span className="text-gradient">Save Smarter.</span>
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl text-white/60 mb-10 leading-relaxed max-w-xl"
-            >
-              VisionBill uses state-of-the-art AI to itemize your grocery receipts, track price hikes, and manage shared household expenses—all in real-time.
-            </motion.p>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <button className="w-full sm:w-auto bg-primary text-white px-10 py-5 rounded-2xl font-extrabold text-lg flex items-center justify-center gap-3 shadow-2xl shadow-primary/30 hover:bg-primary-light transition-all active:scale-95 group">
-                Download for iOS
-                <Smartphone className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button className="w-full sm:w-auto glass text-white px-10 py-5 rounded-2xl font-extrabold text-lg flex items-center justify-center gap-3 hover:bg-white/10 transition-all">
-                Download for Android
-                <Download className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+// --- Main App Component ---
 
-          <div className="flex-1 relative">
-            <motion.div 
-              initial={{ opacity: 0, rotate: 10, scale: 0.8 }}
-              animate={{ opacity: 1, rotate: 0, scale: 1 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="relative z-10 w-[300px] md:w-[350px] mx-auto rounded-[3rem] border-8 border-[#333] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden bg-black"
-            >
-              {/* Fake App Mockup */}
-              <div className="p-6 pt-12">
-                <div className="flex justify-between items-center mb-10">
-                  <div>
-                    <p className="text-white/40 text-xs">Total Spend</p>
-                    <p className="text-2xl font-outfit font-bold">₹4,250.00</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-primary/20" />
-                </div>
-                
-                <div className="glass rounded-2xl p-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <Receipt className="text-primary w-5 h-5" />
-                    <div>
-                      <p className="text-sm font-bold">Grocery Scan</p>
-                      <p className="text-[10px] text-white/40">2 mins ago • Itemized</p>
-                    </div>
-                    <p className="ml-auto text-sm font-bold text-green-400">+₹1,240</p>
-                  </div>
-                </div>
+const App = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
 
-                <div className="space-y-3">
-                  <div className="h-12 w-full bg-white/5 rounded-xl animate-pulse" />
-                  <div className="h-12 w-full bg-white/5 rounded-xl animate-pulse" />
-                  <div className="h-20 w-full bg-primary/20 rounded-2xl border border-primary/20 flex items-center justify-center">
-                    <TrendingUp className="text-primary w-8 h-8 animate-float" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full" />
-          </div>
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
+  const rotate = useTransform(scrollYProgress, [0, 0.2], [0, -5]);
+  const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  
+  const springScroll = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+
+  return (
+    <div ref={containerRef} className="bg-[#050506] text-white selection:bg-primary/30">
+      <Navbar />
+
+      {/* Hero: Parallax Zoom Out */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        <motion.div 
+          style={{ scale, rotate }}
+          className="relative z-20 text-center px-6"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <span className="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-[0.3em] text-white/60">
+              The Future of Receipts
+            </span>
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-6xl md:text-[9rem] font-outfit font-extrabold leading-[0.9] tracking-tighter mb-12"
+          >
+            Scan. <br />
+            <span className="text-gradient">Simplify.</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl md:text-2xl text-white/40 max-w-2xl mx-auto leading-relaxed mb-12 font-medium"
+          >
+            VisionBill transforms chaotic receipt piles into structured financial stories using the power of AI.
+          </motion.p>
+          <motion.div 
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ delay: 0.3 }}
+             className="flex justify-center"
+          >
+             <button className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all">
+                Download the Story
+             </button>
+          </motion.div>
+        </motion.div>
+
+        {/* Parallax Background Elements */}
+        <motion.div style={{ opacity }} className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/20 animate-bounce">
+           <ChevronDown className="w-8 h-8" />
+        </motion.div>
+        
+        <div className="absolute inset-0 z-10 pointer-events-none">
+           <motion.div 
+             animate={{ y: [0, -50, 0], x: [0, 30, 0] }}
+             transition={{ duration: 20, repeat: Infinity }}
+             className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 blur-[150px] rounded-full" 
+           />
+           <motion.div 
+             animate={{ y: [0, 50, 0], x: [0, -30, 0] }}
+             transition={{ duration: 15, repeat: Infinity }}
+             className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-purple-500/10 blur-[150px] rounded-full" 
+           />
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-32 px-6 bg-[#0c0c0e]">
+      {/* The Story Section: Fade in Content */}
+      <section id="story" className="max-w-7xl mx-auto px-8 py-32">
+        <SectionHeading 
+          badge="Our Mission"
+          title="From paper waste to digital wisdom."
+          subtitle="We didn't just build a scanner. We built a bridge between your physical purchases and your digital future. Every grocery run is a piece of your financial puzzle—we just help you put it together."
+        />
+
+        <div className="space-y-20">
+          <FeatureRow 
+            index={1}
+            icon={Camera}
+            title="Visionary OCR"
+            description="Our advanced OCR (Optical Character Recognition) engine doesn't just read text—it understands context. It knows the difference between a pack of milk and a milk-based dessert, categorizing your life automatically."
+            imageSide="right"
+          />
+          <FeatureRow 
+            index={2}
+            icon={Users}
+            title="Unified Households"
+             description="Living together shouldn't be about tracking who owes who. Shared pantries and bill splitting are baked into the core experience, making household management invisible."
+            imageSide="left"
+          />
+          <FeatureRow 
+            index={3}
+            icon={TrendingUp}
+            title="Predictive Savings"
+            description="Our AI tracks price history across thousands of users. We'll warn you if your favorite brands are hiking prices, suggest cheaper alternatives, and predict your monthly spend before it happens."
+            imageSide="right"
+          />
+        </div>
+      </section>
+
+      {/* Horizontal Scroll or Stat Count (AOS style) */}
+      <section className="py-40 bg-white/5 border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-8">
+           <div className="grid md:grid-cols-4 gap-12 text-center">
+             <StatItem value="1M+" label="Receipts Scanned" />
+             <StatItem value="₹2Cr+" label="Savings Identified" />
+             <StatItem value="50K+" label="Active Households" />
+             <StatItem value="99.9%" label="AI Accuracy" />
+           </div>
+        </div>
+      </section>
+
+      {/* Pricing: The Story Finale */}
+      <section id="pricing" className="py-40 px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-24">
-            <h2 className="text-4xl md:text-5xl font-outfit font-extrabold mb-6">Built for the modern household.</h2>
-            <p className="text-lg text-white/40 max-w-2xl mx-auto">Stop guessing where your money goes. VisionBill does the heavy lifting so you can focus on saving.</p>
-          </div>
+          <SectionHeading 
+            badge="The Final Choice"
+            title="Invest in your focus."
+            subtitle="Choose a plan that scales with your household. Whether you're tracking solo or managing a busy family home, we have a story for you."
+          />
 
           <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={<Camera className="w-8 h-8 text-blue-400" />}
-              title="Instant OCR"
-              description="Our AI identifies items, quantities, and prices from receipts in seconds. No more manual entry."
-            />
-            <FeatureCard 
-              icon={<Users className="w-8 h-8 text-purple-400" />}
-              title="Shared Pantries"
-              description="Collaborate with roommates or family members. See what's in stock and who bought what."
-            />
-            <FeatureCard 
-              icon={<Zap className="w-8 h-8 text-yellow-400" />}
-              title="Price Spike Alerts"
-              description="Get notified if your favorite brands are getting more expensive. Track historical trends."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="py-24 border-y border-white/5 bg-black/40">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-center items-center gap-10 md:gap-20 opacity-30 invert">
-          <Receipt className="w-24 md:w-32" />
-          <Smartphone className="w-24 md:w-32" />
-          <Zap className="w-24 md:w-32" />
-          <ShieldCheck className="w-24 md:w-32" />
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 text-white">
-            <h2 className="text-4xl md:text-5xl font-outfit font-extrabold mb-6">Simple, fair pricing.</h2>
-            <p className="text-lg text-white/40">Choose the plan that fits your life.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Plan */}
-            <div className="glass rounded-[2.5rem] p-10 border-white/5">
-              <h3 className="text-xl font-bold mb-2">Essential</h3>
-              <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-4xl font-extrabold">₹0</span>
-                <span className="text-white/40">/mo</span>
-              </div>
-              <ul className="space-y-4 mb-10">
-                <PricingItem text="5 Managed Bill Scans/mo" active />
-                <PricingItem text="Personal Pantry Tracker" active />
-                <PricingItem text="Basic Price History" active />
-                <PricingItem text="Shared Expenses" active={false} />
-                <PricingItem text="Premium OCR Engine" active={false} />
-              </ul>
-              <button className="w-full py-4 rounded-2xl border border-white/10 font-bold hover:bg-white/5 transition-all">
-                Download Free
-              </button>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="relative p-10 rounded-[2.5rem] overflow-hidden group">
-              <div className="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-all" />
-              <div className="absolute inset-0 border-2 border-primary/50 rounded-[2.5rem]" />
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold">Pro Edition</h3>
-                  <span className="bg-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white">Most Popular</span>
-                </div>
-                <div className="flex items-baseline gap-1 mb-8">
-                  <span className="text-4xl font-extrabold">₹49</span>
-                  <span className="text-white/60">/mo</span>
-                </div>
-                <ul className="space-y-4 mb-10">
-                  <PricingItem text="Unlimited Bill Scans" active pro />
-                  <PricingItem text="Unlimited Shared Pantries" active pro />
-                  <PricingItem text="Predictive Spending Analytics" active pro />
-                  <PricingItem text="Export to Excel & PDF" active pro />
-                  <PricingItem text="Priority AI Processing" active pro />
-                </ul>
-                <button className="w-full py-4 rounded-2xl bg-white text-black font-extrabold shadow-xl hover:scale-[1.02] transition-all active:scale-95">
-                  Get Pro Now
-                </button>
-              </div>
-            </div>
+             <SimplePricingCard 
+                name="Casual"
+                price="₹0"
+                features={['5 Scans / mo', 'Personal Pantry', 'Basic History']}
+                btnText="Start for Free"
+             />
+             <SimplePricingCard 
+                primary
+                name="Power User"
+                price="₹49"
+                features={['Unlimited Scans', 'Shared Households', 'Price Spike Alerts', 'AI Analytics']}
+                btnText="Unlock Pro"
+             />
+             <SimplePricingCard 
+                name="Family Lifetime"
+                price="₹999"
+                features={['Lifetime Access', 'Family Bundle', 'Early Beta Features', 'Direct Support']}
+                btnText="Get Lifetime"
+             />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t border-white/5 text-white/40">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
-            <div>
-              <div className="flex items-center gap-3 mb-6 text-white">
-                <Receipt className="w-6 h-6 text-primary" />
-                <span className="font-outfit text-xl font-bold">VisionBill</span>
-              </div>
-              <p className="max-w-xs mb-8">
-                Helping modern households master their spending through AI.
-              </p>
-              <div className="flex gap-6">
-                <Smartphone className="w-5 h-5 hover:text-white transition-colors cursor-pointer" />
-                <TrendingUp className="w-5 h-5 hover:text-white transition-colors cursor-pointer" />
-                <ShieldCheck className="w-5 h-5 hover:text-white transition-colors cursor-pointer" />
-              </div>
+      <footer className="py-32 px-8 border-t border-white/5 bg-black">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-20">
+            <div className="max-w-sm">
+               <div className="flex items-center gap-3 mb-8">
+                  <Receipt className="text-primary w-8 h-8" />
+                  <span className="text-3xl font-outfit font-black">VisionBill</span>
+               </div>
+               <p className="text-white/40 leading-relaxed mb-10 text-lg">
+                  Empowering households to master their spending via intelligent AI automation. 
+               </p>
+               <div className="flex gap-6">
+                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><Smartphone className="w-6 h-6" /></div>
+                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><ShieldCheck className="w-6 h-6" /></div>
+                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><Zap className="w-6 h-6" /></div>
+               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
-              <FooterGroup title="Product" items={['Features', 'Pricing', 'Download']} />
-              <FooterGroup title="Legal" items={['Privacy', 'Terms', 'Security']} />
-              <FooterGroup title="Connect" items={['Support', 'Twitter', 'Instagram']} />
+            
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-20">
+               <FooterLinkGroup title="App" links={['Features', 'Marketplace', 'Pricing']} />
+               <FooterLinkGroup title="Company" links={['The Story', 'Privacy', 'Support']} />
+               <FooterLinkGroup title="Legal" links={['Terms', 'Security', 'GDPR']} />
             </div>
-          </div>
-          <div className="mt-20 pt-8 border-t border-white/5 text-center text-xs">
-            © 2026 VisionBill App. All rights reserved. Precise receipt extraction powered by Gemini 1.5 Flash.
-          </div>
-        </div>
+         </div>
       </footer>
+
+      {/* Progress Bar */}
+      <motion.div 
+        style={{ scaleX: springScroll }} 
+        className="fixed bottom-0 left-0 right-0 h-1.5 bg-primary origin-left z-[100]" 
+      />
     </div>
   );
 };
 
-const FeatureCard = ({ icon, title, description }: any) => (
+// --- Sub-components ---
+
+const StatItem = ({ value, label }: any) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  return (
+    <div ref={ref}>
+      <motion.h4 
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={isInView ? { opacity: 1, scale: 1 } : {}}
+        className="text-5xl md:text-7xl font-outfit font-black text-gradient mb-4"
+      >
+        {value}
+      </motion.h4>
+      <p className="text-white/40 font-bold uppercase tracking-widest text-xs">{label}</p>
+    </div>
+  );
+};
+
+const SimplePricingCard = ({ name, price, features, btnText, primary }: any) => (
   <motion.div 
     whileHover={{ y: -10 }}
-    className="glass p-10 rounded-[2.5rem] border-white/5"
+    className={`p-12 rounded-[3rem] glass flex flex-col h-full border-white/5 transition-all duration-500 ${primary ? 'bg-primary/5 ring-2 ring-primary/40' : 'hover:bg-white/5'}`}
   >
-    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-8">
-      {icon}
-    </div>
-    <h3 className="text-2xl font-bold font-outfit mb-4">{title}</h3>
-    <p className="text-white/40 leading-relaxed text-sm">{description}</p>
+     <h4 className="text-lg font-bold text-white/50 mb-4">{name}</h4>
+     <div className="flex items-baseline gap-2 mb-10">
+        <span className="text-6xl font-outfit font-extrabold">{price}</span>
+        {price !== '₹999' && <span className="text-white/20 text-xl">/mo</span>}
+     </div>
+     <ul className="space-y-6 mb-12 flex-1">
+        {features.map((f: string) => (
+          <li key={f} className="flex items-center gap-4 text-white/60 font-medium">
+             <Plus className="w-5 h-5 text-primary" />
+             {f}
+          </li>
+        ))}
+     </ul>
+     <button className={`w-full py-5 rounded-2xl font-black text-lg transition-all active:scale-95 ${primary ? 'bg-white text-black' : 'border border-white/10 hover:bg-white/5'}`}>
+        {btnText}
+     </button>
   </motion.div>
 );
 
-const PricingItem = ({ text, active, pro }: any) => (
-  <li className="flex items-center gap-3 text-sm">
-    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${active ? (pro ? 'bg-white' : 'bg-primary') : 'bg-white/10'}`}>
-      {active && <Plus className={`w-3 h-3 ${pro ? 'text-black' : 'text-white'}`} />}
-    </div>
-    <span className={active ? 'text-white' : 'text-white/20'}>{text}</span>
-  </li>
-);
-
-const FooterGroup = ({ title, items }: any) => (
+const FooterLinkGroup = ({ title, links }: any) => (
   <div>
-    <h4 className="text-white font-bold text-sm mb-6 uppercase tracking-widest">{title}</h4>
-    <ul className="space-y-4">
-      {items.map((item: any) => (
-        <li key={item} className="hover:text-white transition-colors cursor-pointer text-sm font-medium">{item}</li>
+    <h5 className="text-xs font-black uppercase tracking-[0.2em] text-white/20 mb-8">{title}</h5>
+    <ul className="space-y-5">
+      {links.map((l: string) => (
+        <li key={l} className="text-white/40 hover:text-primary transition-colors cursor-pointer font-bold">{l}</li>
       ))}
     </ul>
   </div>
+);
+
+const ArrowRight = ({ className }: { className?: string }) => (
+  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 );
 
 export default App;
