@@ -11,7 +11,7 @@ import api from '../utils/api';
 
 export const VerificationScreen = ({ navigation }: any) => {
   const theme = useTheme();
-  const { items, toggleItem, updateItemPrice, loading, loadingMessage, currentScan } = useScanStore();
+  const { items, toggleItem, updateItemPrice, removeItem, setAllItemsChecked, loading, loadingMessage, currentScan } = useScanStore();
   const [saving, setSaving] = useState(false);
   const imageUrl = currentScan?.imageUrl;
 
@@ -50,16 +50,28 @@ export const VerificationScreen = ({ navigation }: any) => {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Text style={[styles.title, { color: theme.text }]}>Verify Items</Text>
-            <Text style={[styles.subtitle, { color: theme.textMuted }]}>{items.length} items found</Text>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>{items.length} items found • Tap price to edit</Text>
           </View>
-          <Pressable 
-            style={[styles.retakeBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
-            onPress={() => navigation.navigate('Scanner')}
-          >
-            <Text style={[styles.retakeText, { color: theme.text }]}>📸 Retake</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable 
+              style={[styles.retakeBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
+              onPress={() => setAllItemsChecked(items.some(i => !i.checked))}
+            >
+              <Text style={[styles.retakeText, { color: theme.text }]}>
+                {items.every(i => i.checked) ? '🔓 Uncheck All' : '✅ Check All'}
+              </Text>
+            </Pressable>
+            <Pressable 
+              style={[styles.retakeBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
+              onPress={() => navigation.navigate('Scanner')}
+            >
+              <Text style={[styles.retakeText, { color: theme.text }]}>📸 Retake</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
+
+      <Text style={styles.swipeHint}>💡 Long press to delete an item if AI hallucinated</Text>
 
       <SectionList
         sections={groupedItems}
@@ -111,6 +123,10 @@ export const VerificationScreen = ({ navigation }: any) => {
             isSplit={item.isSplit}
             onToggle={() => toggleItem(item.originalIndex)}
             onPriceChange={(newPrice: number) => updateItemPrice(item.originalIndex, newPrice)}
+            onDelete={() => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              removeItem(item.originalIndex);
+            }}
           />
         ), [toggleItem, updateItemPrice])}
         renderSectionHeader={({ section: { title } }) => (
@@ -273,5 +289,12 @@ const styles = StyleSheet.create({
   retakeText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
+  },
+  swipeHint: {
+    paddingHorizontal: Spacing.lg,
+    color: Colors.textMuted,
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    marginBottom: 8,
   },
 });

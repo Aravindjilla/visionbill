@@ -20,6 +20,8 @@ interface ScanState {
   clearImages: () => void;
   setLoading: (loading: boolean, message?: string) => void;
   setError: (error: string | null) => void;
+  removeItem: (index: number) => void;
+  setAllItemsChecked: (checked: boolean) => void;
 }
 
 export const useScanStore = create<ScanState>()(
@@ -86,6 +88,17 @@ export const useScanStore = create<ScanState>()(
       clearImages: () => set({ currentImages: [] }),
       setLoading: (loading, message = '') => set({ loading, loadingMessage: message }),
       setError: (error) => set({ error }),
+      removeItem: (index) => set((state) => {
+        const newItems = state.items.filter((_, i) => i !== index);
+        const newTotal = newItems.reduce((acc, item) => acc + item.price, 0);
+        return { 
+          items: newItems,
+          currentScan: state.currentScan ? { ...state.currentScan, extractedTotal: newTotal } : null
+        };
+      }),
+      setAllItemsChecked: (checked) => set((state) => ({
+        items: state.items.map(i => ({ ...i, checked }))
+      })),
     }),
     {
       name: 'vision-bill-scan-store',

@@ -15,6 +15,7 @@ interface ItemCardProps {
   isSplit?: boolean;
   onToggle: () => void;
   onPriceChange?: (newPrice: number) => void;
+  onDelete?: () => void;
 }
 
 export const ItemCard = React.memo<ItemCardProps>(({
@@ -27,6 +28,7 @@ export const ItemCard = React.memo<ItemCardProps>(({
   isSplit,
   onToggle,
   onPriceChange,
+  onDelete,
 }) => {
   const theme = useTheme();
   const [internalPrice, setInternalPrice] = React.useState(price.toString());
@@ -40,8 +42,14 @@ export const ItemCard = React.memo<ItemCardProps>(({
     onToggle();
   };
 
+  const handleLongPress = () => {
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
   return (
-    <Pressable onPress={handlePress}>
+    <Pressable onPress={handlePress} onLongPress={handleLongPress}>
       <MotiView
         animate={{
           opacity: checked ? 0.4 : 1,

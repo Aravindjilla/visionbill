@@ -23,6 +23,7 @@ import { useScanStore } from '../store/useScanStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { PaywallModal } from '../components/PaywallModal';
 import { TourStep } from '../components/TourStep';
+import { useTour } from '../components/AppTourProvider';
 import { UI_CONFIG, SCREENS } from '../utils/constants';
 
 export const DashboardScreen = ({ navigation }: any) => {
@@ -228,6 +229,13 @@ export const DashboardScreen = ({ navigation }: any) => {
             <View style={styles.gamificationRow}>
               <View style={[styles.badge, { backgroundColor: theme.card, borderColor: theme.border }]}><Text style={styles.badgeEmoji}>🔥</Text><Text style={[styles.badgeText, { color: theme.text }]}>3 Day Streak</Text></View>
               <View style={[styles.badge, { borderColor: theme.warning, backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}><Text style={styles.badgeEmoji}>🏆</Text><Text style={[styles.badgeText, { color: theme.text }]}>Top Saver</Text></View>
+              <Pressable 
+                style={[styles.badge, { backgroundColor: theme.surfaceLight, borderColor: theme.border, marginLeft: 'auto' }]}
+                onPress={() => useTour().startTour()}
+              >
+                <Text style={styles.badgeEmoji}>❓</Text>
+                <Text style={[styles.badgeText, { color: theme.text }]}>Help</Text>
+              </Pressable>
             </View>
 
           </View>
@@ -318,7 +326,13 @@ export const DashboardScreen = ({ navigation }: any) => {
         </GlassCard>
 
         {/* Insight Card: Category Breakdown */}
-        {!loading && Object.keys(byCategory).length > 0 && (
+        {loading ? (
+          <GlassCard style={styles.insightCard}>
+            <Shimmer width={150} height={24} borderRadius={8} style={{ marginBottom: 16 }} />
+            <Shimmer width={width - 80} height={40} borderRadius={12} style={{ marginBottom: 12 }} />
+            <Shimmer width={width - 80} height={40} borderRadius={12} />
+          </GlassCard>
+        ) : Object.keys(byCategory).length > 0 && (
           <GlassCard style={styles.insightCard}>
             <Text style={[styles.insightTitle, { marginBottom: 16 }]}>Category Breakdown</Text>
             {Object.entries(byCategory).map(([cat, val]: [string, any]) => {
