@@ -8,12 +8,16 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#6366f1",
-          dark: "#4f46e5",
-          light: "#818cf8",
+          DEFAULT: "#4ade80", // Mint/Emerald 400 (Growth/Money)
+          dark: "#22c55e",    // Green 500
+          light: "#86efac",   // Green 300
         },
-        surface: "#121212",
-        card: "#1e1e1e",
+        secondary: {
+          DEFAULT: "#38bdf8", // Sky 400 (Trust/Vision)
+          dark: "#0ea5e9",    // Sky 500
+        },
+        surface: "#050505",  // Matte Black
+        card: "#0f172a",     // Slate 900
         border: "rgba(255, 255, 255, 0.1)",
       },
       fontFamily: {

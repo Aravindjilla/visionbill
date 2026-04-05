@@ -39,17 +39,22 @@ const Navbar = () => {
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled ? 'glass py-4' : 'py-8'}`}>
       <div className="max-w-7xl mx-auto px-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-            <Receipt className="text-white w-6 h-6" />
+          <div className="relative group">
+            <div className="absolute -inset-2 bg-gradient-to-tr from-primary to-secondary blur-lg opacity-40 group-hover:opacity-80 transition-opacity" />
+            <div className="relative w-12 h-12 bg-black border border-white/10 rounded-2xl flex items-center justify-center overflow-hidden">
+               <img src="/logo.png" alt="VisionBill" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
+            </div>
           </div>
-          <span className="font-outfit text-2xl font-extrabold tracking-tight">VisionBill</span>
+          <span className="font-outfit text-3xl font-black tracking-tight flex items-baseline">
+            Vision<span className="text-primary">Bill</span>
+          </span>
         </div>
         <div className="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
-          <a href="#story" className="text-white/50 hover:text-white transition-colors">The Story</a>
+          <a href="#solution" className="text-white/50 hover:text-white transition-colors">The Solution</a>
           <a href="#features" className="text-white/50 hover:text-white transition-colors">Features</a>
           <a href="#pricing" className="text-white/50 hover:text-white transition-colors">Pricing</a>
-          <MagneticButton className="bg-primary hover:bg-primary-light text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
-            Download App
+          <MagneticButton className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
+            Get the App
           </MagneticButton>
         </div>
         <button className="md:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -118,7 +123,7 @@ const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right' }: any
         animate={isInView ? { opacity: 1, scale: 1, rotate: 0 } : {}}
         transition={{ duration: 1, ease: "circOut" }}
       >
-        <div className="aspect-square bg-gradient-to-br from-primary/20 to-purple-500/10 rounded-[3rem] glass flex items-center justify-center p-12 overflow-hidden">
+        <div className="aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 rounded-[3rem] glass flex items-center justify-center p-12 overflow-hidden">
           <motion.div 
             animate={{ y: isInView ? [0, -20, 0] : 0 }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -181,7 +186,7 @@ const App = () => {
   const springScroll = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
   return (
-    <div ref={containerRef} className="bg-[#050506] text-white selection:bg-primary/30">
+    <div ref={containerRef} className="text-white selection:bg-primary/30 min-h-screen">
       <Navbar />
 
       {/* Hero: Parallax Zoom Out */}
@@ -221,7 +226,7 @@ const App = () => {
             transition={{ delay: 0.2 }}
             className="text-xl md:text-2xl text-white/40 max-w-2xl mx-auto leading-relaxed mb-12 font-medium"
           >
-            VisionBill transforms chaotic receipt piles into structured financial stories using the power of AI.
+            VisionBill transforms chaotic receipt piles into structured digital insights using the power of AI.
           </motion.p>
           <motion.div 
              initial={{ opacity: 0, scale: 0.9 }}
@@ -229,8 +234,8 @@ const App = () => {
              transition={{ delay: 0.3 }}
              className="flex justify-center"
           >
-             <MagneticButton className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all">
-                Download the Story
+             <MagneticButton className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(25,25,25,0.15)] hover:scale-105 active:scale-95 transition-all">
+                Get Started for Free
              </MagneticButton>
           </motion.div>
         </motion.div>
@@ -251,12 +256,12 @@ const App = () => {
            <motion.div 
              animate={{ y: [0, -50, 0], x: [0, 30, 0] }}
              transition={{ duration: 20, repeat: Infinity }}
-             className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 blur-[150px] rounded-full" 
+             className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#4ade80]/10 blur-[150px] rounded-full" 
            />
            <motion.div 
              animate={{ y: [0, 50, 0], x: [0, -30, 0] }}
              transition={{ duration: 15, repeat: Infinity }}
-             className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-purple-500/10 blur-[150px] rounded-full" 
+             className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-[#38bdf8]/10 blur-[150px] rounded-full" 
            />
         </div>
       </section>
@@ -279,10 +284,10 @@ const App = () => {
          </motion.div>
       </section>
 
-      {/* The Story Section: Fade in Content */}
-      <section id="story" className="max-w-7xl mx-auto px-8 py-32">
+      {/* The Solution Section: Fade in Content */}
+      <section id="solution" className="max-w-7xl mx-auto px-8 py-32">
         <SectionHeading 
-          badge="Our Mission"
+          badge="The Solution"
           title="From paper waste to digital wisdom."
           subtitle="We didn't just build a scanner. We built a bridge between your physical purchases and your digital future."
         />
@@ -474,7 +479,7 @@ const App = () => {
             
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-20">
                <FooterLinkGroup title="App" links={['Features', 'Marketplace', 'Pricing']} />
-               <FooterLinkGroup title="Company" links={['The Story', 'Privacy', 'Support']} />
+               <FooterLinkGroup title="Company" links={['The Solution', 'Privacy', 'Support']} />
                <FooterLinkGroup title="Legal" links={['Terms', 'Security', 'GDPR']} />
             </div>
          </div>
@@ -591,7 +596,7 @@ const LiveDemo = () => {
               initial={{ top: -10 }}
               animate={{ top: '100%' }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent z-10 shadow-[0_0_20px_rgba(99,102,241,0.8)]"
+              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent z-10 shadow-[0_0_20px_rgba(74,222,128,0.8)]"
             />
           )}
 
@@ -629,14 +634,15 @@ const LiveDemo = () => {
                     <div className="flex justify-between items-end mb-8">
                        <div>
                           <p className="text-xs text-white/30 font-black uppercase mb-1">Merchant Found</p>
-                          <p className="text-2xl font-outfit font-black">Star Bazaar</p>
+                          <p className="text-2xl font-outfit font-black">Reliance Smart</p>
                        </div>
-                       <p className="text-2xl font-outfit font-black text-green-400">₹1,240.50</p>
+                       <p className="text-2xl font-outfit font-black text-green-400">₹842.50</p>
                     </div>
-                    <DemoItem name="Fresh Milk 1L" price="₹42.00" category="Dairy" />
-                    <DemoItem name="Sourdough Bread" price="₹110.00" category="Bakery" />
-                    <DemoItem name="Laundry Pods (30pc)" price="₹890.00" category="Home Care" delay={0.1} />
-                    <DemoItem name="Bell Peppers Red" price="₹198.50" category="Produce" delay={0.2} />
+                    <DemoItem name="Amul Gold Milk 500ml" price="₹33.00" category="Dairy" />
+                    <DemoItem name="Taj Mahal Tea 250g" price="₹210.00" category="Beverages" />
+                    <DemoItem name="Maggi 2-Minute Noodles (6-pack)" price="₹168.00" category="Packaged" delay={0.1} />
+                    <DemoItem name="Potatoes (2kg)" price="₹48.00" category="Vegetables" delay={0.2} />
+                    <DemoItem name="Central GST (9%)" price="₹42.50" category="Taxes" delay={0.3} />
                  </motion.div>
                )}
              </AnimatePresence>
