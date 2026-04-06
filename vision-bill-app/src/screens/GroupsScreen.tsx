@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { MotiView } from 'moti';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Shimmer } from '../components/Shimmer';
@@ -119,20 +120,27 @@ export const GroupsScreen = ({ navigation }: any) => {
         <FlatList
           data={groups}
           keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <Pressable 
-              style={styles.groupCard}
-              onPress={() => {
-                setSelectedGroup(item);
-                setMemberModalVisible(true);
-              }}
+          renderItem={({ item, index }) => (
+            <MotiView
+              from={{ opacity: 0, translateX: -20 }}
+              animate={{ opacity: 1, translateX: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 160, delay: index * 70 }}
             >
-              <View>
-                <Text style={styles.groupName}>{item.name}</Text>
-                <Text style={styles.groupMembers}>{item.members?.length || 0} members</Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+              <Pressable
+                style={styles.groupCard}
+                onPress={() => {
+                  setSelectedGroup(item);
+                  setMemberModalVisible(true);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <View>
+                  <Text style={styles.groupName}>{item.name}</Text>
+                  <Text style={styles.groupMembers}>{item.members?.length || 0} members</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
+            </MotiView>
           )}
           contentContainerStyle={styles.listContent}
         />

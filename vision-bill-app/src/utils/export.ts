@@ -2,72 +2,170 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 
+/** Escape a single CSV cell value — wraps in quotes, escapes embedded quotes */
+const csvCell = (val: any): string => `"${String(val ?? '').replace(/"/g, '""')}"`;
+
 export class ExportService {
   static async exportToCSV(data: any[], filename: string) {
     if (data.length === 0) return;
 
-    // Generate CSV Header
-    const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(obj => 
-      Object.values(obj).map(val => `"${val}"`).join(',')
+    const headers = Object.keys(data[0]).map(csvCell).join(',');
+    const rows = data.map(obj =>
+      Object.values(obj).map(csvCell).join(',')
     ).join('\n');
 
     const csvContent = `${headers}\n${rows}`;
     const fileUri = `${FileSystem.documentDirectory}${filename}.csv`;
 
-    await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-      encoding: 'utf8',
-    });
-
-    await Sharing.shareAsync(fileUri);
+    await FileSystem.writeAsStringAsync(fileUri, csvContent, { encoding: 'utf8' });
+    await Sharing.shareAsync(fileUri, { mimeType: 'text/csv' });
   }
 
   static async exportToPDF(html: string, filename: string) {
     const { uri } = await Print.printToFileAsync({ html });
     const fileUri = `${FileSystem.documentDirectory}${filename}.pdf`;
-
-    await FileSystem.moveAsync({
-      from: uri,
-      to: fileUri,
-    });
-
-    await Sharing.shareAsync(fileUri);
+    await FileSystem.moveAsync({ from: uri, to: fileUri });
+    await Sharing.shareAsync(fileUri, { mimeType: 'application/pdf' });
   }
 
-  static generateReceiptHTML(scan: any) {
-    const itemsRows = scan.items.map((item: any) => `
+  /** Single receipt HTML — used when tapping a specific receipt */
+  static generateReceiptHTML(scan: any): string {
+    const items: any[] = scan?.items ?? [];
+    const total: number = scan?.extractedTotal ?? items.reduce((s: number, i: any) => s + (i.price ?? 0), 0);
+    const cgst: number = scan?.cgst ?? 0;
+    const sgst: number = scan?.sgst ?? 0;
+
+    const itemsRows = items.map((item: any) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.cleanName || item.shorthand}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₹${item.price.toFixed(2)}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;">${item.cleanName || item.shorthand || 'Item'}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;">×${item.qty ?? 1}</td>
+        <td style="padding:10px;border-bottom:1px solid #eee;text-align:right;">₹${(item.price ?? 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const taxRows = [
+      cgst > 0 ? `<tr><td style="padding:6px 10px;" colspan="2">CGST</td><td style="padding:6px 10px;text-align:right;">₹${cgst.toFixed(2)}</td></tr>` : '',
+      sgst > 0 ? `<tr><td style="padding:6px 10px;" colspan="2">SGST</td><td style="padding:6px 10px;text-align:right;">₹${sgst.toFixed(2)}</td></tr>` : '',
+    ].join('');
+
+    return `
+      <html>
+        <head><meta charset="utf-8"></head>
+        <body style="font-family:sans-serif;padding:40px;color:#333;max-width:600px;margin:0 auto;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+            <div>
+              <h1 style="color:#6366f1;margin:0 0 4px;">VisionBill Receipt</h1>
+              <p style="margin:0;color:#64748b;font-size:14px;">${scan?.merchantName || 'Receipt'}</p>
+            </div>
+            <div style="text-align:right;color:#64748b;font-size:13px;">
+              <p style="margin:0;">${new Date(scan?.createdAt).toLocaleDateString('en-IN', { year:'numeric', month:'long', day:'numeric' })}</p>
+              <p style="margin:4px 0 0;font-size:11px;">ID: ${scan?._id ?? ''}</p>
+            </div>
+          </div>
+          <hr style="border:0;border-top:2px solid #6366f1;margin:0 0 20px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0;">Item</th>
+                <th style="padding:10px;text-align:right;border-bottom:2px solid #e2e8f0;">Qty</th>
+                <th style="padding:10px;text-align:right;border-bottom:2px solid #e2e8f0;">Price</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows || '<tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8;">No items</td></tr>'}</tbody>
+            <tfoot>
+              ${taxRows}
+              <tr style="border-top:2px solid #e2e8f0;">
+                <td style="padding:16px 10px;font-weight:bold;font-size:16px;" colspan="2">Grand Total</td>
+                <td style="padding:16px 10px;text-align:right;font-weight:bold;font-size:20px;color:#6366f1;">₹${total.toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <footer style="margin-top:48px;text-align:center;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:20px;">
+            Generated by VisionBill · ${new Date().toLocaleDateString()}
+          </footer>
+        </body>
+      </html>
+    `;
+  }
+
+  /** Monthly spending summary PDF — used for bulk export from Dashboard */
+  static generateSummaryHTML(
+    receipts: any[],
+    stats: { totalSpent: number; byCategory: Record<string, number>; savings: number },
+    dateLabel: string,
+  ): string {
+    const categoryRows = Object.entries(stats.byCategory ?? {})
+      .sort(([, a], [, b]) => b - a)
+      .map(([cat, val]) => `
+        <tr>
+          <td style="padding:10px;border-bottom:1px solid #eee;">${cat}</td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #eee;">₹${(val as number).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+    const receiptRows = receipts.map((r: any) => `
+      <tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;">${new Date(r.createdAt).toLocaleDateString('en-IN')}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;">${r.merchantName || 'Unknown'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;">${r.items?.length ?? 0} items</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;">₹${(r.extractedTotal ?? 0).toFixed(2)}</td>
       </tr>
     `).join('');
 
     return `
       <html>
-        <body style="font-family: sans-serif; padding: 40px; color: #333;">
-          <h1 style="color: #6366f1;">VisionBill Receipt</h1>
-          <p><strong>ID:</strong> ${scan._id}</p>
-          <p><strong>Date:</strong> ${new Date(scan.createdAt).toLocaleDateString()}</p>
-          <hr style="border: 0; border-top: 2px solid #6366f1; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse;">
+        <head><meta charset="utf-8"></head>
+        <body style="font-family:sans-serif;padding:40px;color:#333;max-width:700px;margin:0 auto;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h1 style="color:#6366f1;margin:0;">VisionBill Spending Report</h1>
+            <span style="color:#64748b;font-size:14px;">${dateLabel}</span>
+          </div>
+          <hr style="border:0;border-top:2px solid #6366f1;margin:16px 0 24px;">
+
+          <!-- Summary Cards -->
+          <div style="display:flex;gap:16px;margin-bottom:32px;">
+            <div style="flex:1;background:#f0fdf4;border-radius:12px;padding:16px;">
+              <p style="margin:0 0 4px;color:#16a34a;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Total Spent</p>
+              <p style="margin:0;font-size:24px;font-weight:700;color:#0f172a;">₹${(stats.totalSpent ?? 0).toFixed(2)}</p>
+            </div>
+            <div style="flex:1;background:#eff6ff;border-radius:12px;padding:16px;">
+              <p style="margin:0 0 4px;color:#2563eb;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Savings</p>
+              <p style="margin:0;font-size:24px;font-weight:700;color:#0f172a;">₹${(stats.savings ?? 0).toFixed(2)}</p>
+            </div>
+            <div style="flex:1;background:#faf5ff;border-radius:12px;padding:16px;">
+              <p style="margin:0 0 4px;color:#7c3aed;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Receipts</p>
+              <p style="margin:0;font-size:24px;font-weight:700;color:#0f172a;">${receipts.length}</p>
+            </div>
+          </div>
+
+          <!-- Category Breakdown -->
+          ${categoryRows ? `
+          <h2 style="font-size:16px;color:#0f172a;margin:0 0 12px;">Category Breakdown</h2>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:32px;">
             <thead>
-              <tr style="background: #f8fafc;">
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+              <tr style="background:#f8fafc;">
+                <th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0;">Category</th>
+                <th style="padding:10px;text-align:right;border-bottom:2px solid #e2e8f0;">Spent</th>
               </tr>
             </thead>
-            <tbody>
-              ${itemsRows}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td style="padding: 20px 10px; font-weight: bold;">Grand Total</td>
-                <td style="padding: 20px 10px; text-align: right; font-weight: bold; font-size: 20px; color: #6366f1;">₹${scan.extractedTotal.toFixed(2)}</td>
+            <tbody>${categoryRows}</tbody>
+          </table>` : ''}
+
+          <!-- Receipt List -->
+          <h2 style="font-size:16px;color:#0f172a;margin:0 0 12px;">All Receipts (${receipts.length})</h2>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#f8fafc;">
+                <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:13px;">Date</th>
+                <th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;font-size:13px;">Store</th>
+                <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;font-size:13px;">Items</th>
+                <th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0;font-size:13px;">Total</th>
               </tr>
-            </tfoot>
+            </thead>
+            <tbody>${receiptRows || '<tr><td colspan="4" style="padding:20px;text-align:center;color:#94a3b8;">No receipts</td></tr>'}</tbody>
           </table>
-          <footer style="margin-top: 60px; text-align: center; color: #94a3b8; font-size: 12px;">
-            Generated by VisionBill - Your Premium Shopping Companion
+          <footer style="margin-top:48px;text-align:center;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;padding-top:20px;">
+            Generated by VisionBill · ${new Date().toLocaleDateString()}
           </footer>
         </body>
       </html>

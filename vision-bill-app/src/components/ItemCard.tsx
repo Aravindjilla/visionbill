@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, TextInput } from 'react-native';
 import { MotiView, MotiText } from 'moti';
 import * as Haptics from 'expo-haptics';
-import { Colors, useTheme } from '../theme/colors';
+import { useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
 interface ItemCardProps {
@@ -71,8 +71,8 @@ export const ItemCard = React.memo<ItemCardProps>(({
           <View style={styles.qtyRow}>
             <Text style={[styles.qty, { color: theme.textMuted }]}>{qty}</Text>
             {isSplit && (
-              <View style={styles.splitBadge}>
-                <Text style={styles.splitBadgeText}>⚡ Split</Text>
+              <View style={[styles.splitBadge, { backgroundColor: theme.glassPrimary }]}>
+                <Text style={[styles.splitBadgeText, { color: theme.primary }]}>⚡ Split</Text>
               </View>
             )}
           </View>
@@ -101,8 +101,8 @@ export const ItemCard = React.memo<ItemCardProps>(({
             <Text style={[styles.price, { color: theme.text }]}>₹{price.toFixed(2)}</Text>
           )}
           {savings && (
-            <View style={styles.savingsBadge}>
-              <Text style={styles.savingsText}>Save ₹{savings.toFixed(2)}</Text>
+            <View style={[styles.savingsBadge, { backgroundColor: theme.glassSuccess }]}>
+              <Text style={[styles.savingsText, { color: theme.success }]}>Save ₹{savings.toFixed(2)}</Text>
             </View>
           )}
         </View>
@@ -135,12 +135,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
     padding: Spacing.md,
     borderRadius: 16,
     marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   left: {
     marginRight: Spacing.md,
@@ -149,17 +147,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: Colors.shimmer,
     overflow: 'hidden',
   },
   image: {
     width: '100%',
     height: '100%',
-  },
-  shimmer: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.textMuted,
   },
   center: {
     flex: 1,
@@ -167,13 +159,11 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: 'Inter_700Bold',
     fontSize: 16,
-    color: Colors.text,
     marginBottom: 4,
   },
   qty: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
-    color: Colors.textMuted,
   },
   right: {
     alignItems: 'flex-end',
@@ -182,7 +172,6 @@ const styles = StyleSheet.create({
   price: {
     fontFamily: 'Inter_700Bold',
     fontSize: 16,
-    color: Colors.text,
   },
   editPriceContainer: {
     flexDirection: 'row',
@@ -195,18 +184,15 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
-    color: Colors.textMuted,
     marginRight: 2,
   },
   priceInput: {
     fontFamily: 'Inter_700Bold',
     fontSize: 16,
-    color: Colors.text,
     minWidth: 40,
     textAlign: 'right',
   },
   savingsBadge: {
-    backgroundColor: 'rgba(0, 200, 83, 0.1)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -215,7 +201,6 @@ const styles = StyleSheet.create({
   savingsText: {
     fontFamily: 'Inter_700Bold',
     fontSize: 10,
-    color: Colors.success,
   },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   splitBadge: { backgroundColor: 'rgba(99,102,241,0.12)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },

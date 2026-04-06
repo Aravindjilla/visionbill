@@ -56,22 +56,48 @@ export const DashboardScreen = ({ navigation }: any) => {
     }
   };
 
-  const handleExportCSV = async (receipts: any[]) => {
-    const exportData = receipts.map(r => ({
-      Date: new Date(r.createdAt).toLocaleDateString(),
-      Store: r.merchantName || 'Unknown',
-      Items: r.items?.length || 0,
-      Total: r.extractedTotal?.toFixed(2) || 0,
-      Status: r.status
-    }));
-    await ExportService.exportToCSV(exportData, `VisionBill_Export_${Date.now()}`);
+  const handleExportCSV = async () => {
+    try {
+      const resp = await api.get('/scans');
+      const allScans: any[] = resp.data;
+      if (allScans.length === 0) {
+        Alert.alert('Nothing to Export', 'No receipts found.');
+        return;
+      }
+      const exportData = allScans.map(r => ({
+        Date: new Date(r.createdAt).toLocaleDateString(),
+        Store: r.merchantName || 'Unknown',
+        Items: r.items?.length || 0,
+        Total: r.extractedTotal?.toFixed(2) || '0.00',
+        Status: r.status,
+      }));
+      await ExportService.exportToCSV(exportData, `VisionBill_Export_${Date.now()}`);
+    } catch (err: any) {
+      Alert.alert('Export Failed', err?.message || 'Could not export receipts.');
+    }
   };
 
-  const handleExportPDF = async (receipts: any[]) => {
-    if (receipts.length === 0) return;
-    const latest = receipts[0];
-    const html = ExportService.generateReceiptHTML(latest);
-    await ExportService.exportToPDF(html, `VisionBill_Receipt_${latest._id}`);
+  const handleExportPDF = async () => {
+    try {
+      const resp = await api.get('/scans');
+      const allScans: any[] = resp.data;
+      if (allScans.length === 0) {
+        Alert.alert('Nothing to Export', 'No receipts found.');
+        return;
+      }
+      const totalSpent = parseFloat(
+        data?.stats?.find((s: any) => s.label === 'Total Spent')?.value.replace('₹', '') || '0'
+      );
+      const dateLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      const html = ExportService.generateSummaryHTML(
+        allScans,
+        { totalSpent, byCategory, savings: savedAmount },
+        dateLabel,
+      );
+      await ExportService.exportToPDF(html, `VisionBill_Report_${Date.now()}`);
+    } catch (err: any) {
+      Alert.alert('Export Failed', err?.message || 'Could not generate PDF report.');
+    }
   };
 
   const handleUndo = async () => {
@@ -259,13 +285,20 @@ export const DashboardScreen = ({ navigation }: any) => {
           ) : (
             <TourStep id="stats-card" style={{ flexDirection: 'row', gap: 8 }}>
               {stats.map((s, i) => (
-                <GlassCard key={i} style={styles.statCard}>
-                  <Text style={[styles.statLabel, { color: theme.textMuted }]}>{s.label}</Text>
-                  <Text style={[styles.statValue, { color: theme.text }]}>{s.value}</Text>
-                  <Text style={[styles.statChange, { color: s.pos ? theme.success : theme.error }]}>
-                    {s.change}
-                  </Text>
-                </GlassCard>
+                <MotiView
+                  key={i}
+                  from={{ opacity: 0, translateY: 20 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition={{ type: 'spring', damping: 18, stiffness: 140, delay: i * 80 }}
+                >
+                  <GlassCard style={styles.statCard}>
+                    <Text style={[styles.statLabel, { color: theme.textMuted }]}>{s.label}</Text>
+                    <Text style={[styles.statValue, { color: theme.text }]}>{s.value}</Text>
+                    <Text style={[styles.statChange, { color: s.pos ? theme.success : theme.error }]}>
+                      {s.change}
+                    </Text>
+                  </GlassCard>
+                </MotiView>
               ))}
             </TourStep>
           )}
@@ -316,7 +349,12 @@ export const DashboardScreen = ({ navigation }: any) => {
                 const isToday = i === weeklyTrend.length - 1;
                 return (
                   <View key={i} style={styles.chartBarContainer}>
-                    <View style={[styles.chartBar, { backgroundColor: theme.primary, height: barHeight, opacity: isToday ? 1 : 0.55 }]} />
+                    <MotiView
+                      from={{ height: 0, opacity: 0 }}
+                      animate={{ height: barHeight, opacity: isToday ? 1 : 0.55 }}
+                      transition={{ type: 'spring', damping: 16, stiffness: 120, delay: i * 60 }}
+                      style={[styles.chartBar, { backgroundColor: isToday ? theme.primary : theme.chart1 }]}
+                    />
                     <Text style={[styles.chartDate, { color: theme.textMuted }]}>{d.day}</Text>
                   </View>
                 );
@@ -384,10 +422,10 @@ export const DashboardScreen = ({ navigation }: any) => {
           <View>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</Text>
             <View style={styles.exportActions}>
-              <Pressable onPress={() => handleExportCSV(recentReceipts)} style={[styles.exportBtn, { borderColor: theme.border }]}>
+              <Pressable onPress={handleExportCSV} style={[styles.exportBtn, { borderColor: theme.border }]}>
                 <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📄 CSV</Text>
               </Pressable>
-              <Pressable onPress={() => handleExportPDF(recentReceipts)} style={[styles.exportBtn, { borderColor: theme.border }]}>
+              <Pressable onPress={handleExportPDF} style={[styles.exportBtn, { borderColor: theme.border }]}>
                 <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📑 PDF</Text>
               </Pressable>
             </View>
@@ -403,27 +441,33 @@ export const DashboardScreen = ({ navigation }: any) => {
             <Shimmer width={width - 40} height={80} borderRadius={16} style={{ marginBottom: 12 }} />
           </View>
         ) : recentReceipts.length > 0 ? (
-          recentReceipts.map((r: any) => (
-            <Pressable
+          recentReceipts.map((r: any, idx: number) => (
+            <MotiView
               key={r._id}
-              style={[styles.receiptCard, { backgroundColor: theme.card, borderColor: theme.border }]}
-              onPress={() => handleReceiptPress(r)}
-              onLongPress={() => handleDeleteScan(r._id)}
+              from={{ opacity: 0, translateX: -16 }}
+              animate={{ opacity: 1, translateX: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 160, delay: idx * 60 }}
             >
-              <View style={[styles.receiptIcon, { backgroundColor: theme.glassPrimary }]}>
-                <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
-              </View>
-              <View style={styles.receiptMain}>
-                <Text style={[styles.storeName, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">{r.merchantName || 'New Scan'}</Text>
-                <Text style={[styles.receiptMeta, { color: theme.textMuted }]}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
-              </View>
-              <View style={styles.receiptRight}>
-                <Text style={[styles.receiptAmount, { color: theme.text }]}>₹{r.extractedTotal?.toFixed(2) || '0.00'}</Text>
-                <Text style={[styles.statusBadge, { color: r.status === 'completed' ? theme.success : theme.warning }]}>
-                  {r.status === 'completed' ? '✓ Done' : '⏳ Processing'}
-                </Text>
-              </View>
-            </Pressable>
+              <Pressable
+                style={[styles.receiptCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+                onPress={() => handleReceiptPress(r)}
+                onLongPress={() => handleDeleteScan(r._id)}
+              >
+                <View style={[styles.receiptIcon, { backgroundColor: theme.glassPrimary }]}>
+                  <Text style={styles.receiptIconText}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text>
+                </View>
+                <View style={styles.receiptMain}>
+                  <Text style={[styles.storeName, { color: theme.text }]} numberOfLines={1} ellipsizeMode="tail">{r.merchantName || 'New Scan'}</Text>
+                  <Text style={[styles.receiptMeta, { color: theme.textMuted }]}>{new Date(r.createdAt).toLocaleDateString()} • {r.items?.length || 0} items</Text>
+                </View>
+                <View style={styles.receiptRight}>
+                  <Text style={[styles.receiptAmount, { color: theme.text }]}>₹{r.extractedTotal?.toFixed(2) || '0.00'}</Text>
+                  <Text style={[styles.statusBadge, { color: r.status === 'completed' ? theme.success : theme.warning }]}>
+                    {r.status === 'completed' ? '✓ Done' : '⏳ Processing'}
+                  </Text>
+                </View>
+              </Pressable>
+            </MotiView>
           ))
         ) : (
           <EmptyState

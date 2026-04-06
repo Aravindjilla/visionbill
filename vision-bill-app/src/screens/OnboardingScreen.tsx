@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
+import { MotiView } from 'moti';
+import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 
@@ -33,6 +35,7 @@ export const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   const flatListRef = useRef<FlatList>(null);
 
   const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (currentIndex < SLIDES.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
@@ -49,39 +52,73 @@ export const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(e) => {
-          setCurrentIndex(Math.round(e.nativeEvent.contentOffset.x / width));
+          const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+          if (newIndex !== currentIndex) {
+            setCurrentIndex(newIndex);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
         }}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <View style={styles.slide}>
-            <View style={styles.lottieWrapper}>
-               <LottieView
-                 source={item.lottie}
-                 autoPlay
-                 loop
-                 style={styles.lottie}
-               />
-            </View>
-            <View style={styles.textContent}>
+            <MotiView
+              from={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 120, delay: 100 }}
+              style={styles.lottieWrapper}
+            >
+              <LottieView
+                source={item.lottie}
+                autoPlay
+                loop
+                style={styles.lottie}
+              />
+            </MotiView>
+            <MotiView
+              // Re-key by index so the animation replays each time the slide becomes active
+              key={`text-${index}-${currentIndex === index}`}
+              from={{ opacity: 0, translateY: 24 }}
+              animate={{ opacity: currentIndex === index ? 1 : 0, translateY: currentIndex === index ? 0 : 24 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 140, delay: 180 }}
+              style={styles.textContent}
+            >
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.subtitle}>{item.subtitle}</Text>
-            </View>
+            </MotiView>
           </View>
         )}
       />
 
       <View style={styles.footer}>
+        {/* Animated pagination dots */}
         <View style={styles.pagination}>
           {SLIDES.map((_, i) => (
-            <View key={i} style={[styles.dot, currentIndex === i && styles.activeDot]} />
+            <MotiView
+              key={i}
+              animate={{
+                width: currentIndex === i ? 28 : 8,
+                opacity: currentIndex === i ? 1 : 0.35,
+                backgroundColor: currentIndex === i ? Colors.primary : Colors.border,
+              }}
+              transition={{ type: 'spring', damping: 18, stiffness: 200 }}
+              style={styles.dot}
+            />
           ))}
         </View>
-        
-        <Pressable style={styles.button} onPress={handleNext}>
-          <Text style={styles.buttonText}>{currentIndex === SLIDES.length - 1 ? 'Start Scanning' : 'Next'}</Text>
-        </Pressable>
-        
+
+        <MotiView
+          from={{ opacity: 0, translateY: 16 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: 'spring', damping: 20, delay: 300 }}
+        >
+          <Pressable style={styles.button} onPress={handleNext}>
+            <Text style={styles.buttonText}>
+              {currentIndex === SLIDES.length - 1 ? 'Start Scanning' : 'Next'}
+            </Text>
+          </Pressable>
+        </MotiView>
+
         <Pressable style={styles.skip} onPress={onFinish}>
-          <Text style={styles.skipText}>Skip Onboarding</Text>
+          <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -97,10 +134,9 @@ const styles = StyleSheet.create({
   title: { fontFamily: 'Outfit_700Bold', fontSize: 28, color: Colors.text, textAlign: 'center' },
   subtitle: { fontFamily: 'Inter_400Regular', fontSize: 16, color: Colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 24, paddingHorizontal: 20 },
   footer: { padding: Spacing.xl, alignItems: 'center' },
-  pagination: { flexDirection: 'row', marginBottom: 40 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border, marginHorizontal: 4 },
-  activeDot: { width: 24, backgroundColor: Colors.primary },
-  button: { width: '100%', backgroundColor: Colors.primary, padding: 18, borderRadius: 18, alignItems: 'center' },
+  pagination: { flexDirection: 'row', marginBottom: 40, alignItems: 'center' },
+  dot: { height: 8, borderRadius: 4, marginHorizontal: 4 },
+  button: { width: width - Spacing.xl * 2, backgroundColor: Colors.primary, padding: 18, borderRadius: 18, alignItems: 'center' },
   buttonText: { fontFamily: 'Inter_700Bold', fontSize: 18, color: '#FFF' },
   skip: { marginTop: 20 },
   skipText: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: Colors.textMuted },

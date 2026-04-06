@@ -1,24 +1,29 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { MotiView } from 'moti';
+import { View } from 'react-native';
 import { Skeleton } from 'moti/skeleton';
-import { Colors } from '../theme/colors';
+import { useTheme } from '../theme/colors';
+import { useThemeStore } from '../store/useThemeStore';
+import { useColorScheme } from 'react-native';
 
 interface ShimmerProps {
   width: number | string;
   height: number | string;
   borderRadius?: number;
   style?: any;
-  colorMode?: 'dark' | 'light';
 }
 
-export const Shimmer = ({ 
-  width, 
-  height, 
-  borderRadius = 12, 
+export const Shimmer = ({
+  width,
+  height,
+  borderRadius = 12,
   style,
-  colorMode = 'dark'
 }: ShimmerProps) => {
+  const theme = useTheme();
+  const { theme: themeSetting } = useThemeStore();
+  const systemScheme = useColorScheme();
+  const resolved = themeSetting === 'auto' ? systemScheme : themeSetting;
+  const colorMode: 'dark' | 'light' = resolved === 'light' ? 'light' : 'dark';
+
   return (
     <View style={style}>
       <Skeleton
@@ -26,13 +31,12 @@ export const Shimmer = ({
         radius={borderRadius}
         height={height as any}
         width={width as any}
-        colors={[Colors.card, Colors.border, Colors.card]}
+        colors={[theme.card, theme.border, theme.card]}
         transition={{
           type: 'timing',
-          duration: 1500,
+          duration: 1200,
         }}
       />
     </View>
   );
 };
-

@@ -2,28 +2,28 @@ import { useColorScheme } from 'react-native';
 import { useThemeStore } from '../store/useThemeStore';
 
 export const DarkTheme = {
-  // ... rest of DarkTheme stays same ...
-  primary: '#6366F1',
-  onPrimary: '#FFFFFF',
-  surface: '#0F1117',
-  surfaceLight: '#1A1D27',
-  surfaceDark: '#08090D',
-  card: 'rgba(26, 29, 39, 0.7)',
-  glassPrimary: 'rgba(99, 102, 241, 0.1)',
-  glassSuccess: 'rgba(16, 185, 129, 0.1)',
-  glassError: 'rgba(239, 68, 68, 0.1)',
+  primary: '#4ade80',    // Luminous Mint (Money/Growth)
+  secondary: '#38bdf8',  // Sky Blue (Vision/Data)
+  onPrimary: '#000000',
+  surface: '#050505',    // Matte Obsidian
+  surfaceLight: '#0f172a',
+  surfaceDark: '#000000',
+  card: 'rgba(15, 23, 42, 0.7)',
+  glassPrimary: 'rgba(74, 222, 128, 0.1)',
+  glassSuccess: 'rgba(74, 222, 128, 0.15)',
+  glassError: 'rgba(248, 113, 113, 0.1)',
   text: '#FFFFFF',
-  textMuted: '#94A3B8',
-  success: '#10B981',
-  error: '#EF4444',
-  border: '#1E293B',
-  shimmer: '#1E293B',
-  info: '#6366F1',
-  warning: '#F59E0B',
-  chart1: '#6366F1',
-  chart2: '#10B981',
-  accent: '#A855F7',
-  overlay: 'rgba(0,0,0,0.2)',
+  textMuted: '#94a3b8',
+  success: '#4ade80',
+  error: '#f87171',
+  border: 'rgba(255, 255, 255, 0.08)',
+  shimmer: '#1e293b',
+  info: '#38bdf8',
+  warning: '#fbbf24',
+  chart1: '#4ade80',
+  chart2: '#38bdf8',
+  accent: '#6366f1',
+  overlay: 'rgba(0,0,0,0.5)',
 };
 
 export const LightTheme = {

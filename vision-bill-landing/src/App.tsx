@@ -14,15 +14,20 @@ import {
   Receipt, 
   TrendingUp, 
   Smartphone,
+  ScanLine,
   ShieldCheck, 
   Zap,
   Menu,
   X,
   Plus,
-  ChevronDown,
   Star,
-  Quote
+  Quote,
+  ArrowRight
 } from 'lucide-react';
+import Tilt from './components/Tilt';
+import VisionCursor from './components/VisionCursor';
+import SavingsPulse3D from './components/SavingsPulse3D';
+import { Suspense } from 'react';
 
 // --- Components ---
 
@@ -38,24 +43,26 @@ const Navbar = () => {
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled ? 'glass py-4' : 'py-8'}`}>
       <div className="max-w-7xl mx-auto px-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <a href="/" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-4 cursor-pointer group relative z-[100]">
           <div className="relative group">
             <div className="absolute -inset-2 bg-gradient-to-tr from-primary to-secondary blur-lg opacity-40 group-hover:opacity-80 transition-opacity" />
-            <div className="relative w-12 h-12 bg-black border border-white/10 rounded-2xl flex items-center justify-center overflow-hidden">
-               <img src="/logo.png" alt="VisionBill" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
+            <div className="relative w-12 h-12 bg-black border border-white/20 rounded-2xl flex items-center justify-center overflow-hidden">
+               <img src="./logo.png" alt="VisionBill" className="w-10 h-10 object-contain" />
             </div>
           </div>
           <span className="font-outfit text-3xl font-black tracking-tight flex items-baseline">
             Vision<span className="text-primary">Bill</span>
           </span>
-        </div>
+        </a>
         <div className="hidden md:flex items-center gap-10 text-sm font-bold tracking-wide">
           <a href="#solution" className="text-white/50 hover:text-white transition-colors">The Solution</a>
           <a href="#features" className="text-white/50 hover:text-white transition-colors">Features</a>
           <a href="#pricing" className="text-white/50 hover:text-white transition-colors">Pricing</a>
-          <MagneticButton className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
-            Get the App
-          </MagneticButton>
+          <a href="#pricing">
+            <MagneticButton className="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full shadow-xl shadow-primary/20 transition-all active:scale-95">
+              Get the App
+            </MagneticButton>
+          </a>
         </div>
         <button className="md:hidden text-white" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           {isMenuOpen ? <X /> : <Menu />}
@@ -87,64 +94,280 @@ const SectionHeading = ({ title, subtitle, badge }: { title: string, subtitle: s
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="text-xl text-white/40 leading-relaxed"
+      className="text-xl text-white/50 leading-relaxed font-inter"
     >
       {subtitle}
     </motion.p>
   </div>
 );
 
-const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right' }: any) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, amount: 0.3 });
+const MobileFrame = ({ children, className = "" }: any) => (
+  <div className={`relative w-[300px] h-[610px] md:w-[340px] md:h-[700px] bg-[#050505] rounded-[3.5rem] border-[8px] border-[#1a1a1a] shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] overflow-hidden ${className} ring-1 ring-white/10 ring-inset`}>
+    {/* Inner Titanium Bezel */}
+    <div className="absolute inset-0 border-[4px] border-[#2a2a2a] rounded-[3rem] pointer-events-none z-50 shadow-inner" />
+    
+    {/* Dynamic Island */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-[1.5rem] z-[100] flex items-center justify-center border-x border-b border-white/5">
+       <div className="w-8 h-1 bg-white/5 rounded-full" />
+    </div>
+    
+    {/* Screen Glare Reflection */}
+    <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-tr from-transparent via-white/[0.02] to-transparent rotate-45 pointer-events-none z-10" />
 
-  return (
-    <div ref={ref} className={`flex flex-col ${imageSide === 'right' ? 'md:flex-row' : 'md:flex-row-reverse'} items-center gap-20 py-32`}>
-      <motion.div 
-        className="flex-1"
-        initial={{ opacity: 0, x: imageSide === 'right' ? -50 : 50 }}
-        animate={isInView ? { opacity: 1, x: 0 } : {}}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-      >
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-8">
-          <Icon className="text-primary w-8 h-8" />
-        </div>
-        <h3 className="text-3xl md:text-5xl font-outfit font-bold mb-6">{title}</h3>
-        <p className="text-lg text-white/50 leading-relaxed mb-8">{description}</p>
-        <div className="flex items-center gap-4 text-primary font-bold cursor-pointer group">
-          Learn how it works 
-          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-        </div>
-      </motion.div>
+    <div className="w-full h-full p-2 flex flex-col overflow-y-scroll hide-scrollbar scroll-smooth bg-black relative z-0">
+       {children}
+    </div>
+  </div>
+);
 
-      <motion.div 
-        className="flex-1 relative"
-        initial={{ opacity: 0, scale: 0.8, rotate: imageSide === 'right' ? 5 : -5 }}
-        animate={isInView ? { opacity: 1, scale: 1, rotate: 0 } : {}}
-        transition={{ duration: 1, ease: "circOut" }}
-      >
-        <div className="aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 rounded-[3rem] glass flex items-center justify-center p-12 overflow-hidden">
-          <motion.div 
-            animate={{ y: isInView ? [0, -20, 0] : 0 }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="w-full h-full bg-white/5 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden"
-          >
-             <div className="absolute top-0 left-0 w-full h-2 bg-primary/20" />
-             <div className="p-8 space-y-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-4 w-full bg-white/5 rounded-full" />
-                ))}
-                <div className="h-32 w-full bg-primary/10 rounded-2xl border border-primary/20 flex items-center justify-center">
-                   <div className="w-12 h-12 rounded-full border-2 border-primary border-dashed animate-spin" />
+const DashboardMockup = () => (
+  <div className="flex-1 bg-black p-4 pt-12 relative overflow-hidden">
+    {/* Global HUD Header */}
+    <div className="flex justify-between items-center mb-10 px-2">
+      <div>
+        <p className="text-[9px] text-white/30 uppercase font-black tracking-widest mb-1">Elite Perspective</p>
+        <p className="text-2xl font-outfit font-black">Universe 👋</p>
+      </div>
+      <div className="relative group">
+         <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-secondary blur-md opacity-40 group-hover:opacity-100 transition-opacity" />
+         <div className="relative w-12 h-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center font-black text-sm text-white">VB</div>
+      </div>
+    </div>
+    
+    {/* Elite Metrics Layer */}
+    <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="glass-elite p-5 rounded-[2rem] relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-2 opacity-20"><TrendingUp size={14} /></div>
+        <p className="text-[9px] uppercase text-white/30 font-black mb-1.5 tracking-tighter">Velocity</p>
+        <p className="text-2xl font-black font-outfit">₹24,842</p>
+        <div className="flex items-center gap-1.5 mt-2">
+           <div className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+           <p className="text-[10px] text-red-500/80 font-black">+14.2%</p>
+        </div>
+      </div>
+      <div className="glass-elite p-5 rounded-[2rem] border-primary/20 bg-primary/[0.02]">
+        <div className="absolute top-0 right-0 p-2 opacity-40 text-primary"><ShieldCheck size={14} /></div>
+        <p className="text-[9px] uppercase text-primary font-black mb-1.5 tracking-tighter">AI Savings</p>
+        <p className="text-2xl font-black font-outfit text-primary">₹3,105</p>
+        <p className="text-[9px] text-white/30 font-bold mt-2">Goal: 84% met</p>
+      </div>
+    </div>
+
+    {/* Luminous Area Chart Mockup */}
+    <div className="glass-elite p-6 rounded-[2.5rem] mb-8 overflow-hidden relative group">
+       <div className="flex justify-between items-end mb-6">
+          <p className="text-[10px] font-black uppercase text-white/30 tracking-widest">Spending Trend</p>
+          <div className="flex gap-1">
+             {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="w-1 rounded-full bg-white/5" style={{ height: Math.random() * 20 + 5 }} />
+             ))}
+          </div>
+       </div>
+       <div className="relative h-24 flex items-end gap-1.5 px-1">
+          {/* Simulated Area Chart using Divs */}
+          <div className="flex-1 bg-primary/20 rounded-t-lg h-[40%] transition-all hover:bg-primary/40" />
+          <div className="flex-1 bg-primary/20 rounded-t-lg h-[60%] transition-all hover:bg-primary/40" />
+          <div className="flex-1 bg-primary/40 rounded-t-lg h-[90%] transition-all hover:bg-primary/60 relative">
+             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(74,222,128,1)]" />
+          </div>
+          <div className="flex-1 bg-primary/20 rounded-t-lg h-[50%] transition-all hover:bg-primary/40" />
+          <div className="flex-1 bg-primary/20 rounded-t-lg h-[75%] transition-all hover:bg-primary/40" />
+       </div>
+    </div>
+
+    {/* Recent Activities List */}
+    <div className="space-y-4 px-1">
+       <div className="flex justify-between items-end px-1 mb-2">
+          <p className="text-[9px] font-black uppercase text-white/20 tracking-[0.4em]">Activities</p>
+          <span className="text-[9px] font-black text-primary uppercase tracking-tighter cursor-pointer">Intelligence Details</span>
+       </div>
+       {[
+          { icon: 'R', title: 'Reliance Smart', time: 'Gemini Extracted', val: '₹842', glow: true },
+          { icon: 'A', title: 'Adobe Cloud', time: 'Subscription', val: '₹4,200', glow: false }
+       ].map((item, i) => (
+          <div key={i} className={`glass-elite p-4 rounded-2xl flex justify-between items-center transition-all hover:bg-white/5 ${item.glow ? 'ring-1 ring-primary/20' : ''}`}>
+             <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black ${item.glow ? 'bg-primary/20 text-primary' : 'bg-white/5 text-white/40'}`}>
+                   {item.icon}
+                </div>
+                <div>
+                   <p className="text-xs font-bold font-inter">{item.title}</p>
+                   <p className="text-[9px] text-white/20 uppercase font-black tracking-tighter">{item.time}</p>
                 </div>
              </div>
-          </motion.div>
+             <p className={`text-xs font-black ${item.glow ? 'text-primary' : ''}`}>{item.val}</p>
+          </div>
+       ))}
+    </div>
+  </div>
+);
+
+const ScannerMockup = () => (
+  <div className="flex-1 bg-black relative flex flex-col items-center justify-center py-10 px-4">
+    <div className="w-full max-w-[280px] space-y-8">
+        <div className="flex justify-between items-center opacity-30 px-2">
+            <ScanLine className="w-5 h-5 text-primary" />
+            <div className="flex gap-1.5">
+               <div className="w-1 h-3 bg-white/20 rounded-full" />
+               <div className="w-1 h-5 bg-primary/40 rounded-full" />
+               <div className="w-1 h-2 bg-white/20 rounded-full" />
+            </div>
         </div>
-        <div className={`absolute -inset-20 bg-primary/10 blur-[100px] rounded-full -z-10`} />
-      </motion.div>
+
+        <div className="relative group">
+           <div className="absolute -inset-1 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+           <div className="w-full h-80 rounded-[2.5rem] glass-elite border-primary/20 relative overflow-hidden backdrop-blur-3xl">
+                <div className="absolute inset-0 bg-primary/5" />
+                <motion.div 
+                  animate={{ top: ['0%', '100%'] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="absolute left-0 right-0 h-20 bg-gradient-to-b from-transparent via-primary to-transparent z-10 shadow-[0_0_40px_rgba(74,222,128,0.8)]"
+                />
+                
+                <div className="absolute inset-x-8 top-12 space-y-4">
+                   {[1, 2, 3].map(i => (
+                     <div key={i} className="h-2 w-full bg-white/10 rounded-full relative overflow-hidden">
+                        <motion.div 
+                          initial={{ x: '-100%' }}
+                          animate={{ x: '100%' }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                          className="absolute inset-0 bg-primary/40"
+                        />
+                     </div>
+                   ))}
+                </div>
+
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full px-6">
+                   <div className="px-6 py-3 rounded-full bg-black/60 backdrop-blur-3xl border border-white/10 flex items-center justify-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini-Vision v2.1</span>
+                   </div>
+                </div>
+           </div>
+        </div>
+        
+        <div className="space-y-3 px-1">
+            <p className="text-[10px] font-black uppercase text-white/20 tracking-[0.2em] mb-4">Detected Entities</p>
+            {[
+              { label: 'Merchant', val: 'Starbucks Coffee' },
+              { label: 'Total', val: '₹1,240.00' },
+              { label: 'Tax ID', val: 'GSTIN24...' }
+            ].map((item, i) => (
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex justify-between items-center p-4 glass-elite rounded-2xl"
+                >
+                   <span className="text-[9px] font-bold text-white/30 uppercase">{item.label}</span>
+                   <span className="text-[10px] font-black text-primary">{item.val}</span>
+                </motion.div>
+            ))}
+        </div>
+    </div>
+  </div>
+);
+
+
+
+const FeatureRow = ({ title, description, icon: Icon, imageSide = 'right', specialComponent }: any) => {
+  const ref = useRef(null);
+  
+  return (
+    <div ref={ref} className={`flex flex-col ${imageSide === 'right' ? 'md:flex-row' : 'md:flex-row-reverse'} gap-32 items-center py-40`}>
+       <motion.div 
+         initial={{ opacity: 0, x: imageSide === 'right' ? -40 : 40 }}
+         whileInView={{ opacity: 1, x: 0 }}
+         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+         className="flex-1 space-y-12"
+       >
+         <div className="relative group w-20 h-20">
+            <div className="absolute -inset-4 bg-primary/20 blur-2xl rounded-full opacity-40 group-hover:opacity-100 transition-opacity" />
+            <div className="relative w-full h-full rounded-2xl bg-[#0a0a0a] border border-white/10 flex items-center justify-center shadow-2xl">
+               <Icon className="text-primary w-10 h-10" />
+            </div>
+         </div>
+         
+         <div className="space-y-8">
+            <h3 className="text-5xl md:text-7xl font-outfit font-black leading-[1.05] tracking-[-0.04em] text-white">
+              {title}
+            </h3>
+            <p className="text-xl text-white/40 leading-relaxed font-inter font-medium max-w-lg">
+              {description}
+            </p>
+         </div>
+
+         <a href="#solution" className="inline-flex items-center gap-6 text-primary font-black uppercase text-[10px] tracking-[0.4em] hover:text-white transition-all group overflow-hidden">
+            <span className="relative">
+               Explore Intelligence
+               <div className="absolute -bottom-1 left-0 w-0 h-[1px] bg-primary group-hover:w-full transition-all duration-500" />
+            </span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-3 transition-transform" />
+         </a>
+       </motion.div>
+
+       <Tilt className="flex-1 relative w-full">
+         <div className="aspect-[4/3] bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 rounded-[4rem] glass-strong flex items-center justify-center p-2 overflow-hidden border border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,1)]">
+            {specialComponent ? (
+              <div className="w-full h-full">
+                <Suspense fallback={null}>
+                  {specialComponent}
+                </Suspense>
+              </div>
+            ) : (
+              <div className="w-full h-full p-12 relative overflow-hidden group/card bg-black/20">
+                {/* Animated Scanning Beam */}
+                <motion.div 
+                  animate={{ top: ['-20%', '120%'] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  className="absolute left-0 right-0 h-40 bg-gradient-to-b from-transparent via-primary/10 to-transparent z-10 pointer-events-none"
+                />
+
+                <div className="space-y-6 opacity-60 group-hover/card:opacity-100 transition-opacity duration-700">
+                  {/* Mock UI: Sidebar + Content */}
+                  <div className="flex gap-6">
+                    <div className="w-1/3 space-y-4">
+                      <div className="h-12 w-full bg-white/10 rounded-2xl shimmer" />
+                      <div className="h-44 w-full bg-white/5 rounded-2xl border border-white/5" />
+                      <div className="h-12 w-full bg-white/5 rounded-2xl" />
+                    </div>
+                    <div className="flex-1 space-y-6">
+                      <div className="h-48 w-full bg-primary/5 rounded-[2.5rem] border border-primary/10 flex items-center justify-center p-8">
+                        <div className="w-full space-y-4">
+                          <div className="h-4 w-3/4 bg-primary/20 rounded-full" />
+                          <div className="h-4 w-1/2 bg-primary/20 rounded-full" />
+                          <div className="h-12 w-full bg-white/5 rounded-2xl flex items-center px-4">
+                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse mr-3" />
+                             <div className="h-2 w-1/2 bg-white/10 rounded-full" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="h-28 bg-secondary/5 rounded-2xl border border-secondary/10" />
+                        <div className="h-28 bg-white/5 rounded-2xl border border-white/5" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Hover Reveal Label */}
+                <div className="absolute inset-x-0 bottom-0 py-8 bg-gradient-to-t from-black to-transparent flex items-center justify-center pointer-events-none">
+                   <p className="font-outfit font-black text-sm uppercase tracking-[0.4em] text-white/40">Real-time Interface</p>
+                </div>
+              </div>
+            )}
+         </div>
+         <div className={`absolute -inset-10 bg-gradient-to-tr from-primary/10 to-secondary/10 blur-[100px] rounded-full -z-10`} />
+       </Tilt>
     </div>
   );
 };
+
+// --- Main App Component ---
+
+import VisionPrism3D from './components/VisionPrism3D';
+import FloatingPhysicalGoods from './components/FloatingPhysicalGoods';
 
 // --- Main App Component ---
 
@@ -153,12 +376,13 @@ const App = () => {
   
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.5,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
+      wheelMultiplier: 1.1,
+      lerp: 0.1,
       infinite: false,
     });
 
@@ -166,12 +390,8 @@ const App = () => {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
-
     requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
+    return () => lenis.destroy();
   }, []);
 
   const { scrollYProgress } = useScroll({
@@ -179,179 +399,155 @@ const App = () => {
     offset: ["start start", "end end"]
   });
 
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
-  const rotate = useTransform(scrollYProgress, [0, 0.2], [0, -5]);
-  const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  const springScroll = useSpring(scrollYProgress, { stiffness: 200, damping: 50 });
+
+  // Cinematic Parallax Transformation Layers
+  const prismScale = useTransform(scrollYProgress, [0, 0.2], [1, 1.8]);
+  const prismOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.4]);
+  const prismY = useTransform(scrollYProgress, [0, 0.3], [0, 200]);
+  const textOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  const textY = useTransform(scrollYProgress, [0, 0.1], [0, -100]);
   
-  const springScroll = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  // Floating Reality Layer Parallax
+  const layer1Y = useTransform(scrollYProgress, [0, 1], [0, -1000]);
+  const layer2Y = useTransform(scrollYProgress, [0, 1], [0, -2000]);
 
   return (
-    <div ref={containerRef} className="text-white selection:bg-primary/30 min-h-screen">
+    <div ref={containerRef} className="text-white selection:bg-primary/30 min-h-screen relative origin-center bg-[#020202]">
+      {/* Cinematic Background Infrastructure */}
+      <div className="fixed inset-0 z-0">
+          <div className="bg-mesh">
+             <div className="mesh-blob mesh-blob-1" />
+             <div className="mesh-blob mesh-blob-2" />
+          </div>
+          <div className="grain-overlay opacity-40 shadow-inner" />
+      </div>
+
+      {/* Floating Reality Parallax Layers */}
+      <motion.div style={{ y: layer1Y }} className="fixed inset-0 pointer-events-none z-[1]">
+         <FloatingPhysicalGoods />
+      </motion.div>
+      <motion.div style={{ y: layer2Y }} className="fixed inset-0 pointer-events-none z-[2] opacity-50 blur-[2px]">
+         <FloatingPhysicalGoods />
+      </motion.div>
+
+      <VisionCursor />
       <Navbar />
 
-      {/* Hero: Parallax Zoom Out */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      {/* Hero: Cinematic Vision Prism Stage */}
+      <section id="hero" className="relative h-[120vh] flex items-center justify-center overflow-hidden z-10">
+        {/* Layer 1: The 3D Prism Centerpiece */}
         <motion.div 
-          style={{ scale, rotate }}
-          className="relative z-20 text-center px-6"
+           style={{ scale: prismScale, opacity: prismOpacity, y: prismY }}
+           className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden"
         >
+           <div className="w-full h-full max-w-7xl pt-20">
+              <Suspense fallback={null}>
+                 <VisionPrism3D />
+              </Suspense>
+           </div>
+        </motion.div>
+
+        {/* Layer 2: Typographic Impact Stage */}
+        <div className="relative z-10 text-center px-6 max-w-7xl select-none pointer-events-none">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-14 pointer-events-auto"
           >
-            <span className="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-[0.3em] text-white/60">
-              The Future of Receipts
+            <span className="px-8 py-3 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-black uppercase tracking-[0.5em] text-primary backdrop-blur-3xl shadow-[0_0_40px_rgba(74,222,128,0.2)]">
+               Vision AI — Release 2.5
             </span>
           </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-6xl md:text-[9.5rem] font-outfit font-extrabold leading-[0.85] tracking-tighter mb-12"
-          >
-            Scan. <br />
-            <motion.span 
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.4, duration: 1 }}
-              className="text-gradient inline-block"
-            >
-              Simplify.
-            </motion.span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-xl md:text-2xl text-white/40 max-w-2xl mx-auto leading-relaxed mb-12 font-medium"
-          >
-            VisionBill transforms chaotic receipt piles into structured digital insights using the power of AI.
-          </motion.p>
-          <motion.div 
-             initial={{ opacity: 0, scale: 0.9 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ delay: 0.3 }}
-             className="flex justify-center"
-          >
-             <MagneticButton className="bg-white text-black px-12 py-5 rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(25,25,25,0.15)] hover:scale-105 active:scale-95 transition-all">
-                Get Started for Free
-             </MagneticButton>
+          
+          <motion.div style={{ opacity: textOpacity, y: textY }} className="pointer-events-none">
+            <h1 className="text-[6rem] md:text-[14rem] font-outfit font-black leading-[0.8] tracking-[-0.06em] mb-20 text-white relative">
+              <span className="relative z-10">Digital</span> <br />
+              <span className="text-gradient inline-block mix-blend-lighten relative">
+                 Alchemy.
+              </span>
+            </h1>
+            
+            <p className="text-2xl text-white/30 max-w-3xl mx-auto leading-relaxed mb-16 font-inter font-medium tracking-tight">
+               Turning physical receipts into intelligence with one tap. <br />
+               Experience the absolute standard in mobile household scanning.
+            </p>
           </motion.div>
-        </motion.div>
 
-        {/* Parallax Background Elements */}
-        <motion.div 
-           className="absolute top-1/2 left-0 w-full text-[25vw] font-black pointer-events-none opacity-[0.02] select-none leading-none -translate-y-1/2 whitespace-nowrap"
-           style={{ x: useTransform(scrollYProgress, [0, 1], [100, -1000]) }}
-        >
-          VISIONBILL INTELLIGENCE
-        </motion.div>
+          {/* conversion kinetic pods */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-wrap justify-center gap-8 mb-16"
+          >
+             <div className="group relative z-[100] perspective-1000 pointer-events-auto cursor-pointer">
+                <MagneticButton className="h-20 w-60 bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] flex items-center px-8 transition-all hover:bg-white/5 active:scale-95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)]">
+                   <Smartphone className="w-8 h-8 mr-6 text-primary group-hover:rotate-12 transition-transform" />
+                   <div className="text-left">
+                      <p className="text-[10px] uppercase font-black text-white/20 leading-none mb-1">Available on</p>
+                      <p className="text-lg font-black text-white">App Store</p>
+                   </div>
+                </MagneticButton>
+                <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-transparent opacity-0 group-hover:opacity-40 blur-xl transition-opacity animate-pulse-slow" />
+             </div>
 
-        <motion.div style={{ opacity }} className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/20 animate-bounce">
-           <ChevronDown className="w-8 h-8" />
-        </motion.div>
-        
-        <div className="absolute inset-0 z-10 pointer-events-none">
-           <motion.div 
-             animate={{ y: [0, -50, 0], x: [0, 30, 0] }}
-             transition={{ duration: 20, repeat: Infinity }}
-             className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#4ade80]/10 blur-[150px] rounded-full" 
-           />
-           <motion.div 
-             animate={{ y: [0, 50, 0], x: [0, -30, 0] }}
-             transition={{ duration: 15, repeat: Infinity }}
-             className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-[#38bdf8]/10 blur-[150px] rounded-full" 
-           />
+             <div className="group relative z-[100] perspective-1000 pointer-events-auto cursor-pointer">
+                <MagneticButton className="h-20 w-60 bg-black/40 backdrop-blur-3xl border border-white/10 rounded-[2rem] flex items-center px-8 transition-all hover:bg-white/5 active:scale-95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)]">
+                   <Smartphone className="w-8 h-8 mr-6 text-secondary group-hover:rotate-12 transition-transform" />
+                   <div className="text-left">
+                      <p className="text-[10px] uppercase font-black text-white/20 leading-none mb-1">Get it on</p>
+                      <p className="text-lg font-black text-white">Google Play</p>
+                   </div>
+                </MagneticButton>
+                <div className="absolute -inset-1 bg-gradient-to-tr from-secondary to-transparent opacity-0 group-hover:opacity-40 blur-xl transition-opacity animate-pulse-slow" />
+             </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="pointer-events-auto">
+             <a href="#solution" className="inline-flex items-center gap-4 text-white/20 hover:text-white transition-all uppercase font-black text-[10px] tracking-[0.6em]">
+                Enter The Core
+                <ArrowRight className="w-5 h-5 animate-bounce-horizontal" />
+             </a>
+          </motion.div>
         </div>
       </section>
 
-      {/* Shared Pantry Highlight with Scroll Scale */}
-      <section className="relative overflow-hidden">
-         <motion.div 
-           initial={{ opacity: 0, scale: 0.8 }}
-           whileInView={{ opacity: 1, scale: 1 }}
-           transition={{ duration: 1.5, ease: "circOut" }}
-           className="max-w-7xl mx-auto px-8 py-60 text-center"
-         >
-            <h2 className="text-5xl md:text-8xl font-outfit font-black mb-12">The last scanner <br /> you'll ever need.</h2>
-            <div className="flex flex-wrap justify-center gap-12 mt-20 opacity-30">
-               <Smartphone size={100} />
-               <Receipt size={100} />
-               <TrendingUp size={100} />
-               <Users size={100} />
-            </div>
-         </motion.div>
-      </section>
+      {/* Feature Narrative Stage: Depth Scroll */}
+      <section id="solution" className="relative z-10 bg-[#020202] py-40">
+        <div className="max-w-7xl mx-auto px-8">
+           <SectionHeading 
+             badge="Intelligence Stage"
+             title="Messy Paper. Clean Wisdom."
+             subtitle="We've re-engineered the scanning experience to be completely kinetic. Watch your physical reality transform in real-time."
+           />
 
-      {/* The Solution Section: Fade in Content */}
-      <section id="solution" className="max-w-7xl mx-auto px-8 py-32">
-        <SectionHeading 
-          badge="The Solution"
-          title="From paper waste to digital wisdom."
-          subtitle="We didn't just build a scanner. We built a bridge between your physical purchases and your digital future."
-        />
+           <div className="space-y-60">
+              <FeatureRow 
+                icon={Camera}
+                title="Vision Prism Scan"
+                description="Our refractive OCR engine identifies more than just prices. It builds a digital twin of every purchase, metadata intact, available across all your platforms instantly."
+                imageSide="right"
+                specialComponent={<MobileFrame><ScannerMockup /></MobileFrame>}
+              />
+              
+              <FeatureRow 
+                icon={TrendingUp}
+                title="Economic Oracle"
+                description="Predictive saving models that track brand inflation in your specific household. We alert you when your essentials fluctuate, before you even reach the checkout."
+                imageSide="left"
+                specialComponent={<SavingsPulse3D />}
+              />
 
-        {/* Live Interactive Demo Section */}
-        <section className="mb-40">
-           <div className="grid md:grid-cols-2 gap-20 items-center">
-              <div className="relative group">
-                 <div className="absolute -inset-10 bg-primary/20 blur-[100px] rounded-full group-hover:bg-primary/30 transition-all opacity-0 group-hover:opacity-100" />
-                 <motion.div 
-                   whileHover={{ scale: 1.02 }}
-                   className="glass rounded-[2.5rem] p-1 border-white/10"
-                 >
-                    <LiveDemo />
-                 </motion.div>
-              </div>
-              <div>
-                 <MotiBadge text="Try the Magic" />
-                 <h3 className="text-4xl md:text-5xl font-outfit font-black mb-8 leading-tight">Seeing is believing.</h3>
-                 <p className="text-xl text-white/40 leading-relaxed mb-10">
-                    Interact with our live preview to see how VisionBill itemizes a chaotic grocery receipt into a structured digital record in under 2 seconds.
-                 </p>
-                 <div className="flex flex-col gap-6">
-                    <BenefitRow icon={<Zap className="text-yellow-400" />} text="99% OCR accuracy on handwritten or faded bills." />
-                    <BenefitRow icon={<ShieldCheck className="text-blue-400" />} text="Privacy first: Extraction happens in secure cloud isolated from your personal ID." />
-                 </div>
-              </div>
+              <FeatureRow 
+                icon={Users}
+                title="Unified Households"
+                description="Multiple devices, one intelligence. Household synchronization so perfect, it feels local. Share receipts and split bills with haptic visual confirmation."
+                imageSide="right"
+                specialComponent={<MobileFrame><DashboardMockup /></MobileFrame>}
+              />
            </div>
-        </section>
-
-        <motion.div 
-          variants={{
-            hidden: { opacity: 0 },
-            show: {
-              opacity: 1,
-              transition: {
-                staggerChildren: 0.3
-              }
-            }
-          }}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          className="space-y-20"
-        >
-          <FeatureRow 
-            icon={Camera}
-            title="Visionary OCR"
-            description="Our advanced OCR (Optical Character Recognition) engine doesn't just read text—it understands context. It knows the difference between a pack of milk and a milk-based dessert, categorizing your life automatically."
-            imageSide="right"
-          />
-          <FeatureRow 
-            icon={Users}
-            title="Unified Households"
-             description="Living together shouldn't be about tracking who owes who. Shared pantries and bill splitting are baked into the core experience, making household management invisible."
-            imageSide="left"
-          />
-          <FeatureRow 
-            icon={TrendingUp}
-            title="Predictive Savings"
-            description="Our AI tracks price history across thousands of users. We'll warn you if your favorite brands are hiking prices, suggest cheaper alternatives, and predict your monthly spend before it happens."
-            imageSide="right"
-          />
-        </motion.div>
+        </div>
       </section>
 
       {/* Horizontal Scroll or Stat Count (AOS style) */}
@@ -470,11 +666,26 @@ const App = () => {
                <p className="text-white/40 leading-relaxed mb-10 text-lg">
                   Empowering households to master their spending via intelligent AI automation. 
                </p>
-               <div className="flex gap-6">
-                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><Smartphone className="w-6 h-6" /></div>
-                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><ShieldCheck className="w-6 h-6" /></div>
-                  <div className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"><Zap className="w-6 h-6" /></div>
-               </div>
+                <div className="flex gap-6">
+                   <div 
+                     onClick={() => alert("Launching on iOS & Android soon!")}
+                     className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"
+                   >
+                     <Smartphone className="w-6 h-6" />
+                   </div>
+                   <div 
+                     onClick={() => alert("Enterprise Security details available upon request.")}
+                     className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"
+                   >
+                     <ShieldCheck className="w-6 h-6" />
+                   </div>
+                   <div 
+                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                     className="w-12 h-12 rounded-xl glass flex items-center justify-center hover:text-primary transition-colors cursor-pointer"
+                   >
+                     <Zap className="w-6 h-6" />
+                   </div>
+                </div>
             </div>
             
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-20">
@@ -506,14 +717,6 @@ const MotiBadge = ({ text }: { text: string }) => (
   </motion.span>
 );
 
-const BenefitRow = ({ icon, text }: any) => (
-  <div className="flex gap-4 items-start">
-    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 mt-1">
-      {icon}
-    </div>
-    <p className="text-white/60 text-lg leading-relaxed">{text}</p>
-  </div>
-);
 
 const FAQItem = ({ q, a }: any) => {
   const [open, setOpen] = React.useState(false);
@@ -561,114 +764,24 @@ const TestimonialCard = ({ name, role, quote }: any) => (
   </motion.div>
 );
 
-const LiveDemo = () => {
-  const [isScanning, setIsScanning] = React.useState(false);
-  const [scanned, setScanned] = React.useState(false);
-  
-  const handleScan = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      setScanned(true);
-    }, 2000);
-  };
 
-  return (
-    <div className="p-8 min-h-[500px] flex flex-col">
-       <div className="flex justify-between items-center mb-10">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-2xl">
-               <Camera className="text-white" />
-            </div>
-            <h4 className="text-xl font-black font-outfit">Live OCR Demo</h4>
-          </div>
-          <button 
-             onClick={() => { setScanned(false); handleScan(); }}
-             className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-black uppercase transition-all"
-          >
-             Reset Simulation
-          </button>
-       </div>
-
-       <div className="flex-1 rounded-3xl bg-black/40 border border-white/5 p-8 flex flex-col relative overflow-hidden">
-          {isScanning && (
-            <motion.div 
-              initial={{ top: -10 }}
-              animate={{ top: '100%' }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent z-10 shadow-[0_0_20px_rgba(74,222,128,0.8)]"
-            />
-          )}
-
-          {!scanned && !isScanning ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-               <Receipt className="w-20 h-20 text-white/10 mb-8" />
-               <p className="text-lg font-bold text-white/50 mb-8">Place a messy receipt to see the magic.</p>
-               <button 
-                 onClick={handleScan}
-                 className="bg-primary text-white px-10 py-5 rounded-2xl font-black shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-               >
-                 Simulation: Scan Receipt
-               </button>
-            </div>
-          ) : (
-             <AnimatePresence mode="wait">
-               {isScanning ? (
-                 <motion.div 
-                   key="loading" 
-                   initial={{ opacity: 0 }} 
-                   animate={{ opacity: 1 }} 
-                   exit={{ opacity: 0 }}
-                   className="flex-1 flex flex-col items-center justify-center"
-                 >
-                    <div className="w-24 h-24 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-8" />
-                    <p className="text-primary font-black uppercase tracking-widest text-xs">Analyzing pixels...</p>
-                 </motion.div>
-               ) : (
-                 <motion.div 
-                   key="results"
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   className="space-y-4"
-                 >
-                    <div className="flex justify-between items-end mb-8">
-                       <div>
-                          <p className="text-xs text-white/30 font-black uppercase mb-1">Merchant Found</p>
-                          <p className="text-2xl font-outfit font-black">Reliance Smart</p>
-                       </div>
-                       <p className="text-2xl font-outfit font-black text-green-400">₹842.50</p>
-                    </div>
-                    <DemoItem name="Amul Gold Milk 500ml" price="₹33.00" category="Dairy" />
-                    <DemoItem name="Taj Mahal Tea 250g" price="₹210.00" category="Beverages" />
-                    <DemoItem name="Maggi 2-Minute Noodles (6-pack)" price="₹168.00" category="Packaged" delay={0.1} />
-                    <DemoItem name="Potatoes (2kg)" price="₹48.00" category="Vegetables" delay={0.2} />
-                    <DemoItem name="Central GST (9%)" price="₹42.50" category="Taxes" delay={0.3} />
-                 </motion.div>
-               )}
-             </AnimatePresence>
-          )}
-       </div>
-    </div>
-  );
-};
-
-const DemoItem = ({ name, price, category, delay = 0 }: any) => (
+const DemoItem = ({ name, price, category, delay = 0, glow }: any) => (
   <motion.div 
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
-    transition={{ delay }}
-    className="flex items-center justify-between p-4 glass rounded-xl border-white/5"
+    transition={{ delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+    className={`flex items-center justify-between p-4 glass-elite rounded-2xl transition-all hover:bg-white/5 ${glow ? 'bg-primary/[0.03] border-primary/20' : ''}`}
   >
-     <div className="flex items-center gap-4">
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black">
+     <div className="flex items-center gap-4 text-left">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black transition-colors ${glow ? 'bg-primary/20 text-primary' : 'bg-[#0a0a0a] text-white/30'}`}>
            {name[0]}
         </div>
         <div>
-           <p className="text-sm font-bold">{name}</p>
-           <p className="text-[10px] text-white/30 uppercase tracking-widest font-black">{category}</p>
+           <p className="text-xs font-bold leading-none mb-1.5">{name}</p>
+           <p className="text-[9px] text-white/20 uppercase tracking-widest font-black">{category}</p>
         </div>
      </div>
-     <p className="text-sm font-black">{price}</p>
+     <p className={`text-xs font-black ${glow ? 'text-primary' : ''}`}>{price}</p>
   </motion.div>
 );
 
@@ -691,42 +804,50 @@ const StatItem = ({ value, label }: any) => {
 };
 
 const SimplePricingCard = ({ name, price, features, btnText, primary }: any) => (
-  <motion.div 
-    whileHover={{ y: -10 }}
-    className={`p-12 rounded-[3rem] glass flex flex-col h-full border-white/5 transition-all duration-500 ${primary ? 'bg-primary/5 ring-2 ring-primary/40' : 'hover:bg-white/5'}`}
-  >
-     <h4 className="text-lg font-bold text-white/50 mb-4">{name}</h4>
-     <div className="flex items-baseline gap-2 mb-10">
-        <span className="text-6xl font-outfit font-extrabold">{price}</span>
-        {price !== '₹999' && <span className="text-white/20 text-xl">/mo</span>}
-     </div>
-     <ul className="space-y-6 mb-12 flex-1">
-        {features.map((f: string) => (
-          <li key={f} className="flex items-center gap-4 text-white/60 font-medium">
-             <Plus className="w-5 h-5 text-primary" />
-             {f}
-          </li>
-        ))}
-     </ul>
-     <button className={`w-full py-5 rounded-2xl font-black text-lg transition-all active:scale-95 ${primary ? 'bg-white text-black' : 'border border-white/10 hover:bg-white/5'}`}>
-        {btnText}
-     </button>
-  </motion.div>
+  <Tilt className="h-full">
+    <motion.div 
+      whileHover={{ y: -10 }}
+      className={`p-12 rounded-[3rem] glass flex flex-col h-full border-white/5 transition-all duration-500 ${primary ? 'bg-primary/5 ring-2 ring-primary/40' : 'hover:bg-white/5'}`}
+    >
+       <h4 className="text-lg font-bold text-white/50 mb-4">{name}</h4>
+       <div className="flex items-baseline gap-2 mb-10">
+          <span className="text-6xl font-outfit font-extrabold">{price}</span>
+          {price !== '₹999' && <span className="text-white/20 text-xl">/mo</span>}
+       </div>
+       <ul className="space-y-6 mb-12 flex-1">
+          {features.map((f: string) => (
+            <li key={f} className="flex items-center gap-4 text-white/60 font-medium">
+               <Plus className="w-5 h-5 text-primary" />
+               {f}
+            </li>
+          ))}
+       </ul>
+       <button 
+          onClick={() => alert("Redirecting to Purchase... VisionBill for Home is launching soon!")}
+          className={`w-full py-5 rounded-2xl font-black text-lg transition-all active:scale-95 ${primary ? 'bg-white text-black' : 'border border-white/10 hover:bg-white/5'}`}
+       >
+          {btnText}
+       </button>
+    </motion.div>
+  </Tilt>
 );
 
 const FooterLinkGroup = ({ title, links }: any) => (
   <div>
     <h5 className="text-xs font-black uppercase tracking-[0.2em] text-white/20 mb-8">{title}</h5>
     <ul className="space-y-5">
-      {links.map((l: string) => (
-        <li key={l} className="text-white/40 hover:text-primary transition-colors cursor-pointer font-bold">{l}</li>
-      ))}
+      {links.map((l: string) => {
+        const href = `#${l.toLowerCase().replace(/\s+/g, '')}`;
+        return (
+          <li key={l}>
+            <a href={href} className="text-white/40 hover:text-primary transition-colors cursor-pointer font-bold">
+              {l}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   </div>
-);
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 );
 
 const MagneticButton = ({ children, className }: any) => {

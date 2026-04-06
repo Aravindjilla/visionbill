@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
+import { MotiView } from 'moti';
 import { Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
 import { useScanStore } from '../store/useScanStore';
@@ -258,7 +259,17 @@ export const ScannerScreen = ({ navigation, route }: any) => {
           </View>
 
           <View style={styles.guideContainer}>
-            <View style={styles.guide} />
+            <MotiView
+              from={{ borderColor: 'rgba(255,255,255,0.3)', scale: 1 }}
+              animate={{ borderColor: 'rgba(255,255,255,0.85)', scale: 1.01 }}
+              transition={{
+                type: 'timing',
+                duration: 900,
+                loop: true,
+                repeatReverse: true,
+              }}
+              style={styles.guide}
+            />
           </View>
 
           <View style={styles.footer}>
@@ -329,7 +340,7 @@ const styles = StyleSheet.create({
   modeToggle: { marginTop: 12, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 12 },
   modeToggleText: { ...Typography.label, color: Colors.text, textTransform: 'none' },
   guideContainer: { flex: 1, padding: 40, justifyContent: 'center' },
-  guide: { flex: 1, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)', borderRadius: 20, borderStyle: 'dashed' },
+  guide: { flex: 1, borderWidth: 2, borderRadius: 20, borderStyle: 'dashed' },
   footer: { paddingBottom: 40, alignItems: 'center' },
   previewScroll: { maxHeight: 60, marginBottom: 20, paddingHorizontal: 20 },
   previewThumb: { width: 40, height: 60, borderRadius: 4, marginRight: 8, borderWidth: 1, borderColor: Colors.text },

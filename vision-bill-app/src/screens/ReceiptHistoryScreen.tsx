@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -9,6 +9,7 @@ import { ActivityIndicator } from 'react-native';
 import api from '../utils/api';
 import { useScanStore } from '../store/useScanStore';
 import { Shimmer } from '../components/Shimmer';
+import { ExportService } from '../utils/export';
 
 export const ReceiptHistoryScreen = ({ navigation }: any) => {
   const theme = useTheme();
@@ -47,6 +48,53 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
     navigation.navigate('Verification');
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const resp = await api.get('/scans');
+      const allScans: any[] = resp.data;
+      if (allScans.length === 0) {
+        Alert.alert('Nothing to Export', 'No receipts found.');
+        return;
+      }
+      const exportData = allScans.map(r => ({
+        Date: new Date(r.createdAt).toLocaleDateString(),
+        Store: r.merchantName || 'Unknown',
+        Items: r.items?.length || 0,
+        Total: r.extractedTotal?.toFixed(2) || '0.00',
+        Status: r.status,
+      }));
+      await ExportService.exportToCSV(exportData, `VisionBill_History_${Date.now()}`);
+    } catch (err: any) {
+      Alert.alert('Export Failed', err?.message || 'Could not export receipts.');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const resp = await api.get('/scans');
+      const allScans: any[] = resp.data;
+      if (allScans.length === 0) {
+        Alert.alert('Nothing to Export', 'No receipts found.');
+        return;
+      }
+      const totalSpent = allScans.reduce((sum, r) => sum + (r.extractedTotal ?? 0), 0);
+      const byCategory: Record<string, number> = {};
+      allScans.forEach(r => {
+        const cat = r.billType || 'Other';
+        byCategory[cat] = (byCategory[cat] || 0) + (r.extractedTotal ?? 0);
+      });
+      const dateLabel = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      const html = ExportService.generateSummaryHTML(
+        allScans,
+        { totalSpent, byCategory, savings: 0 },
+        dateLabel,
+      );
+      await ExportService.exportToPDF(html, `VisionBill_History_${Date.now()}`);
+    } catch (err: any) {
+      Alert.alert('Export Failed', err?.message || 'Could not generate PDF report.');
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.header}>
@@ -54,6 +102,14 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
           <Text style={{ fontSize: 24, color: theme.text }}>←</Text>
         </Pressable>
         <Text style={[styles.title, { color: theme.text }]}>Scan History</Text>
+        <View style={styles.exportActions}>
+          <Pressable onPress={handleExportCSV} style={[styles.exportBtn, { borderColor: theme.border }]}>
+            <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📄 CSV</Text>
+          </Pressable>
+          <Pressable onPress={handleExportPDF} style={[styles.exportBtn, { borderColor: theme.border }]}>
+            <Text style={[styles.exportBtnText, { color: theme.textMuted }]}>📑 PDF</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={[styles.searchBar, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -84,7 +140,7 @@ export const ReceiptHistoryScreen = ({ navigation }: any) => {
               style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
               onPress={() => handlePress(r)}
             >
-              <View style={styles.iconBg}><Text style={{ fontSize: 20 }}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text></View>
+              <View style={[styles.iconBg, { backgroundColor: theme.glassPrimary }]}><Text style={{ fontSize: 20 }}>{r.billType === 'grocery' ? '🛒' : '🧾'}</Text></View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.storeName, { color: theme.text }]}>{r.merchantName || 'New Scan'}</Text>
                 <Text style={[styles.meta, { color: theme.textMuted }]}>{new Date(r.createdAt).toLocaleDateString()}</Text>
@@ -106,7 +162,10 @@ const styles = StyleSheet.create({
   searchBar: { marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 16, height: 48, justifyContent: 'center', borderWidth: 1, marginBottom: 10 },
   searchInput: { fontFamily: 'Inter_400Regular' },
   card: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
-  iconBg: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(99,102,241,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  iconBg: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  exportActions: { flexDirection: 'row', marginLeft: 'auto', gap: 8 },
+  exportBtn: { borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  exportBtnText: { fontFamily: 'Inter_600SemiBold', fontSize: 11 },
   storeName: { ...Typography.bodyBold },
   meta: { ...Typography.tiny, marginTop: 2 },
   amount: { ...Typography.subtitle },
