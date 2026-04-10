@@ -1,11 +1,9 @@
-import React, { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Camera, Receipt, Zap, Check } from 'lucide-react';
+import { Receipt, Zap, Check } from 'lucide-react';
 
 const ReceiptSlider = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(100);
-  const dragX = useMotionValue(0);
 
   // Masking percentages
   const maskWidth = useTransform(x, (val) => `${val}%`);

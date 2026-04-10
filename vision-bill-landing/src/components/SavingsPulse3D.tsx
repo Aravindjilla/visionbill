@@ -1,8 +1,7 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { 
   Float, 
-  Environment, 
   ContactShadows,
   MeshDistortMaterial
 } from '@react-three/drei';
@@ -48,9 +47,7 @@ const SavingsPulse3D = () => {
         dpr={[1, 1.5]}
         gl={{ 
           alpha: true, 
-          antialias: true,
-          clearColor: 0x000000,
-          clearAlpha: 0
+          antialias: true
         }}
         style={{ background: 'transparent' }}
       >

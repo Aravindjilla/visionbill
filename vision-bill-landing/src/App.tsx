@@ -765,25 +765,7 @@ const TestimonialCard = ({ name, role, quote }: any) => (
 );
 
 
-const DemoItem = ({ name, price, category, delay = 0, glow }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, x: -10 }}
-    animate={{ opacity: 1, x: 0 }}
-    transition={{ delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-    className={`flex items-center justify-between p-4 glass-elite rounded-2xl transition-all hover:bg-white/5 ${glow ? 'bg-primary/[0.03] border-primary/20' : ''}`}
-  >
-     <div className="flex items-center gap-4 text-left">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[10px] font-black transition-colors ${glow ? 'bg-primary/20 text-primary' : 'bg-[#0a0a0a] text-white/30'}`}>
-           {name[0]}
-        </div>
-        <div>
-           <p className="text-xs font-bold leading-none mb-1.5">{name}</p>
-           <p className="text-[9px] text-white/20 uppercase tracking-widest font-black">{category}</p>
-        </div>
-     </div>
-     <p className={`text-xs font-black ${glow ? 'text-primary' : ''}`}>{price}</p>
-  </motion.div>
-);
+
 
 const StatItem = ({ value, label }: any) => {
   const ref = useRef(null);

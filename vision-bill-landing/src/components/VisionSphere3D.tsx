@@ -3,7 +3,6 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { 
   Float, 
   ContactShadows, 
-  Environment,
   MeshTransmissionMaterial
 } from '@react-three/drei';
 import * as THREE from 'three';
