@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert, ScrollView
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { Colors } from '../theme/colors';
@@ -58,6 +59,66 @@ export const LoginScreen = ({ navigation }: any) => {
       navigation.navigate(SCREENS.MAIN);
     } catch {
       Alert.alert('Sign-in failed', 'Could not complete sign-in. Please try again.');
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (credential.identityToken) {
+        const { setSession } = useAuthStore.getState();
+        const res = await fetch(`${apiUrl}/auth/apple-mobile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identityToken: credential.identityToken }),
+        });
+
+        if (!res.ok) throw new Error('Apple Authentication failed');
+
+        const data = await res.json();
+        const { accessToken, refreshToken, user } = data;
+
+        await saveTokens(String(user.id), accessToken, refreshToken);
+        setSession(String(user.id), accessToken, user.tier ?? 'free');
+        await identifyUser(String(user.id));
+        await registerForPushNotificationsAsync();
+        navigation.navigate(SCREENS.MAIN);
+      }
+    } catch (err: any) {
+      if (err.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert('Sign-in failed', 'Apple authentication could not be completed.');
+      }
+    }
+  };
+
+  const handleBetaLogin = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    const { setSession } = useAuthStore.getState();
+    const deviceId = Constants.installationId || Constants.sessionId || 'beta-test-device';
+    
+    try {
+      const res = await fetch(`${apiUrl}/auth/beta-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId }),
+      });
+
+      if (!res.ok) throw new Error('Beta Login failed');
+
+      const data = await res.json();
+      const { accessToken, refreshToken, user } = data;
+
+      await saveTokens(String(user.id), accessToken, refreshToken);
+      setSession(String(user.id), accessToken, user.tier ?? 'free');
+      navigation.navigate(SCREENS.MAIN);
+    } catch {
+      Alert.alert('Beta Sign-in failed', 'Could not complete beta login.');
     }
   };
 
@@ -139,6 +200,21 @@ export const LoginScreen = ({ navigation }: any) => {
               </>
             )}
           </Pressable>
+
+          <Pressable
+            style={[styles.googleButton, { marginTop: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.primary }]}
+            onPress={handleBetaLogin}
+          >
+            <Text style={[styles.googleButtonText, { color: Colors.primary }]}>Explore as Beta Guest</Text>
+          </Pressable>
+
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+            cornerRadius={16}
+            style={styles.appleButton}
+            onPress={handleAppleLogin}
+          />
           
           <View style={styles.termsRow}>
             <Text style={styles.terms}>By continuing, you agree to our </Text>
@@ -272,11 +348,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  googleIconText: {
-    ...Typography.bodyBold,
-    fontSize: 14,
-    color: Colors.primary,
-  },
+  googleIconText: { ...Typography.bodyBold, fontSize: 14, color: Colors.primary },
+  appleButton: { width: '100%', height: 56, marginTop: 16 },
   termsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

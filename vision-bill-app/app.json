@@ -3,8 +3,8 @@
     "name": "VisionBill",
     "slug": "visionbill",
     "scheme": "visionbill",
-    "version": "1.0.0",
-    "description": "AI-Powered Smart Receipt Scanner and Shared Pantry Tracker",
+    "version": "1.0.1",
+    "description": "AI-Powered Smart Receipt Scanner, Splitter, and Pantry Tracker for India.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,9 +18,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aravindjilla.visionbill",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow VisionBill to scan your receipts.",
-        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images.",
+        "NSCameraUsageDescription": "Allow VisionBill to scan your receipts using the camera.",
+        "NSPhotoLibraryUsageDescription": "Allow VisionBill to select receipt images from your library.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
         }
@@ -51,7 +52,8 @@
       "googleClientId": ""
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ]
   }
 }

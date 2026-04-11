@@ -222,6 +222,26 @@ export const ProfileScreen = ({ navigation }: any) => {
           <Text style={styles.subscriptionsBtnText}>📄 Terms of Service</Text>
         </Pressable>
 
+        <View style={[styles.section, { marginTop: 24, backgroundColor: theme.primary + '05', borderColor: theme.primary + '30', borderWidth: 1 }]}>
+          <Text style={[styles.sectionTitle, { color: theme.primary }]}>Beta Tester Tools</Text>
+          <Pressable
+            style={[styles.saveButton, { backgroundColor: theme.primary + '20' }]}
+            onPress={async () => {
+              try {
+                await api.post('/scans/demo-seed');
+                queryClient.invalidateQueries();
+                Alert.alert('Beta Success', 'Demo receipts and pantry items have been seeded for your account.');
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch (err) {
+                Alert.alert('Beta Error', 'Failed to seed demo data.');
+              }
+            }}
+          >
+            <Text style={[styles.saveButtonText, { color: theme.primary }]}>🌱 Seed Demo Data</Text>
+          </Pressable>
+          <Text style={[styles.label, { marginTop: 12, textAlign: 'center' }]}>Use this to populate your dashboard with sample data for testing.</Text>
+        </View>
+
         <View style={[styles.dangerZone, { borderTopColor: theme.border }]}>
           <Text style={[styles.dangerTitle, { color: theme.error }]}>Danger Zone</Text>
           <Pressable 

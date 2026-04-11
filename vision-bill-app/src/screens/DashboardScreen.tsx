@@ -16,6 +16,7 @@ import { ProgressChart } from 'react-native-chart-kit';
 import { AnimatePresence, MotiView, MotiText } from 'moti';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { MessageSquare, LayoutGrid, Info } from 'lucide-react-native';
 
 import { EmptyState } from '../components/EmptyState';
 import { ExportService } from '../utils/export';
@@ -184,6 +185,8 @@ export const DashboardScreen = ({ navigation }: any) => {
         weeklyTrend: trend,
         badges: (statsResp.data.badges || []) as { emoji: string; label: string }[],
         savingsGoal: profileResp.data.savingsGoal ?? 500,
+        totalSpent: statsResp.data.totalSpent || 0,
+        itemCount: statsResp.data.itemCount || 0,
       };
     },
     enabled: !isAuthLoading && !!accessToken && !!userId,
@@ -249,9 +252,31 @@ export const DashboardScreen = ({ navigation }: any) => {
         <View style={styles.header}>
           <View>
             <Text style={[styles.welcomeText, { color: theme.textMuted }]}>{getGreeting()},</Text>
-            <Text style={[styles.userName, { color: theme.text }]}>{namePrefix} 👋</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={[styles.userName, { color: theme.text }]}>{namePrefix} 👋</Text>
+              <View style={[styles.betaTag, { backgroundColor: theme.primary + '20', borderColor: theme.primary }]}>
+                <Text style={[styles.betaTagText, { color: theme.primary }]}>BETA</Text>
+              </View>
+            </View>
             
-            {/* Gamification Badges */}
+            {/* Quick Summary Widget */}
+            <MotiView 
+              from={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'timing', duration: 800, delay: 300 }}
+              style={[styles.summaryCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            >
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>This Month</Text>
+                <Text style={[styles.summaryValue, { color: theme.text }]}>₹{(data?.totalSpent || 0).toFixed(0)}</Text>
+              </View>
+              <View style={[styles.summaryDivider, { backgroundColor: theme.border }]} />
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>Items Tracked</Text>
+                <Text style={[styles.summaryValue, { color: theme.text }]}>{data?.itemCount || 0}</Text>
+              </View>
+            </MotiView>
+
             <View style={styles.gamificationRow}>
               <View style={[styles.badge, { backgroundColor: theme.card, borderColor: theme.border }]}><Text style={styles.badgeEmoji}>🔥</Text><Text style={[styles.badgeText, { color: theme.text }]}>3 Day Streak</Text></View>
               <View style={[styles.badge, { borderColor: theme.warning, backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}><Text style={styles.badgeEmoji}>🏆</Text><Text style={[styles.badgeText, { color: theme.text }]}>Top Saver</Text></View>
@@ -490,6 +515,14 @@ export const DashboardScreen = ({ navigation }: any) => {
             <Text style={[styles.upgradeBtnText, { color: theme.onPrimary }]}>Upgrade Now</Text>
           </Pressable>
         </View>
+
+        {/* Floating Feedback Button */}
+        <Pressable 
+          style={[styles.feedbackButton, { backgroundColor: theme.primary }]}
+          onPress={() => Alert.alert('Beta Feedback', 'Thanks for testing VisionBill! Contact us at beta@visionbill.app or via Discord.')}
+        >
+          <MessageSquare size={20} color={theme.onPrimary} />
+        </Pressable>
       </ScrollView>
 
       <PaywallModal 
@@ -591,4 +624,12 @@ const styles = StyleSheet.create({
   quickActions: { flexDirection: 'row', paddingHorizontal: Spacing.lg, marginBottom: 24, gap: 12 },
   actionBtn: { flex: 1, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   actionBtnText: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  betaTag: { marginLeft: 8, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
+  betaTagText: { fontSize: 10, fontFamily: 'Inter_800ExtraBold' },
+  summaryCard: { flexDirection: 'row', marginHorizontal: Spacing.lg, padding: 16, borderRadius: 20, borderWidth: 1, marginBottom: 20, justifyContent: 'space-around', alignItems: 'center' },
+  summaryItem: { alignItems: 'center' },
+  summaryLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', marginBottom: 4 },
+  summaryValue: { fontSize: 20, fontFamily: 'Outfit_700Bold' },
+  summaryDivider: { width: 1, height: 30 },
+  feedbackButton: { position: 'absolute', bottom: 30, right: 20, width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 });

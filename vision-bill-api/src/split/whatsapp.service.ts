@@ -10,7 +10,7 @@ export class WhatsappService {
    */
   generateDeepLink(participant: { participantName: string; amount: number; mobile?: string }, items: any[] = []) {
     const amountStr = participant.amount.toFixed(2);
-    let message = `Hi ${participant.participantName}, you owe $${amountStr} for the bill.`;
+    let message = `Hi ${participant.participantName}, you owe Rs.${amountStr} for the bill.`;
 
     if (items && items.length > 0) {
       const itemsList = items.map(i => i.cleanName || i.name).join(', ');

@@ -9,6 +9,10 @@ class GoogleMobileDto {
   @IsString() @IsNotEmpty() idToken: string;
 }
 
+class AppleMobileDto {
+  @IsString() @IsNotEmpty() identityToken: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -40,6 +44,12 @@ export class AuthController {
     return this.authService.validateGoogleIdToken(body.idToken);
   }
 
+  @Post('apple-mobile')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async appleMobile(@Body() body: AppleMobileDto) {
+    return this.authService.validateAppleIdToken(body.identityToken);
+  }
+
   @Get('status')
   @UseGuards(AuthGuard('jwt'))
   async status(@Req() req: any) {
@@ -50,5 +60,12 @@ export class AuthController {
       tier: user.tier || 'free',
       monthlyScanCount: user.monthlyScanCount || 0,
     };
+  }
+
+  @Post('beta-login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async betaLogin(@Body() body: { deviceId: string }) {
+    if (!body.deviceId) throw new BadRequestException('Device ID required');
+    return this.authService.validateBetaUser(body.deviceId);
   }
 }

@@ -5,6 +5,8 @@ import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
+import * as jwt from 'jsonwebtoken';
+import { JwksClient } from 'jwks-rsa';
 import { AUTH_CONFIG, SCAN_LIMITS } from '../common/constants';
 
 @Injectable()
@@ -73,6 +75,39 @@ export class AuthService {
     }
   }
 
+  async validateAppleIdToken(identityToken: string) {
+    try {
+      // 1. Fetch Apple's Public Key
+      const client = new JwksClient({
+        jwksUri: 'https://appleid.apple.com/auth/keys',
+      });
+
+      const decodedToken: any = jwt.decode(identityToken, { complete: true });
+      const kid = decodedToken.header.kid;
+      const key = await client.getSigningKey(kid);
+      const publicKey = key.getPublicKey();
+
+      // 2. Verify JWT
+      const payload: any = jwt.verify(identityToken, publicKey, {
+        algorithms: ['RS256'],
+        issuer: 'https://appleid.apple.com',
+      });
+
+      if (!payload?.email) throw new BadRequestException('Invalid Apple identity token');
+
+      const userDetails = {
+        email: payload.email,
+        displayName: payload.email.split('@')[0], // Apple doesn't always provide name in subsequent logins
+        avatar: '',
+        appleId: payload.sub,
+      };
+
+      return this.validateUser(userDetails);
+    } catch (err) {
+      throw new UnauthorizedException('Apple ID token verification failed');
+    }
+  }
+
   async refresh(userId: string, incomingToken: string) {
     const user = await this.userModel.findById(userId);
     if (!user || !user.currentRefreshToken) {
@@ -82,6 +117,25 @@ export class AuthService {
     const isMatch = await bcrypt.compare(incomingToken, user.currentRefreshToken);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+    return this.generateTokens(user);
+  }
+
+  async validateBetaUser(deviceId: string) {
+    // Only allow in Non-Prod or for Beta testing specifically
+    const email = `beta_${deviceId.slice(-6)}@visionbill.test`;
+    let user = await this.userModel.findOne({ email });
+    if (!user) {
+      user = await this.userModel.create({
+        email,
+        displayName: `Beta Explorer ${deviceId.slice(-4).toUpperCase()}`,
+        avatar: '',
+        tier: 'free',
+        lastLogin: new Date(),
+      });
+    } else {
+      user.lastLogin = new Date();
+      await user.save();
     }
     return this.generateTokens(user);
   }
