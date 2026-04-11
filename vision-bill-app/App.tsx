@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform, UIManager } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, UIManager, Dimensions } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -110,11 +110,12 @@ const Tab = createBottomTabNavigator();
 
 const CustomScanButton = (props: any) => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Pressable 
       {...props}
       style={{
-        top: -24,
+        top: Platform.OS === 'ios' ? -20 : -24,
         justifyContent: 'center',
         alignItems: 'center',
       }}
@@ -140,11 +141,20 @@ const CustomScanButton = (props: any) => {
 
 const MainTabs = () => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = Platform.OS === 'ios' ? 60 + insets.bottom : 70;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: theme.surface, borderTopColor: theme.border, height: 85, paddingBottom: 25, paddingTop: 10 },
+        tabBarStyle: { 
+          backgroundColor: theme.surface, 
+          borderTopColor: theme.border, 
+          height: tabBarHeight,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
+          paddingTop: 10 
+        },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textMuted,
         tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },

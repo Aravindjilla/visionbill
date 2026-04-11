@@ -1,6 +1,5 @@
-import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Colors, useTheme } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
@@ -12,6 +11,7 @@ import { SCREENS } from '../utils/constants';
 
 export const VerificationScreen = ({ navigation }: any) => {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { items, toggleItem, updateItemPrice, removeItem, setAllItemsChecked, loading, loadingMessage, currentScan } = useScanStore();
   const [saving, setSaving] = useState(false);
   const imageUrl = currentScan?.imageUrl;
@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: Spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 30 : Spacing.lg,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
