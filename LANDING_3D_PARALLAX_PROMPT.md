@@ -1,7 +1,4 @@
 # VisionBill Landing — 3D Interactive Parallax Scrolling Prompt
-
-> Feed this entire prompt to Antigravity to implement a world-class cinematic landing page.
-
 ---
 
 You are a senior creative frontend engineer specialising in immersive web experiences.
